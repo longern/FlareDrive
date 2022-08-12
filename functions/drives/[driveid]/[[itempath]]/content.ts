@@ -29,3 +29,14 @@ export async function onRequestPut(context) {
   await env[driveid].put(path, request.body);
   return new Response(null, { status: 204 });
 }
+
+export async function onRequestDelete(context) {
+  const { env, params } = context;
+  const { driveid, itempath } = <Params>params;
+
+  if (!env[driveid]) return notFound();
+
+  const path = decodeURIComponent(itempath.join("/").replace(/:$/, ""));
+  await env[driveid].delete(path);
+  return new Response(null, { status: 204 });
+}
