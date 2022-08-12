@@ -26,8 +26,11 @@ export async function onRequestPut(context) {
   if (!env[driveid]) return notFound();
 
   const path = decodeURIComponent(itempath.join("/").replace(/:$/, ""));
-  await env[driveid].put(path, request.body);
-  return new Response(null, { status: 204 });
+  const obj = await env[driveid].put(path, request.body);
+  const { key, size, uploaded } = obj;
+  return new Response(JSON.stringify({ key, size, uploaded }), {
+    headers: { "Content-Type": "application/json" }
+  });
 }
 
 export async function onRequestDelete(context) {
