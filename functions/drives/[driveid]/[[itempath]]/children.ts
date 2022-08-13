@@ -16,9 +16,10 @@ export async function onRequestGet(context) {
       const { key, size, uploaded } = obj;
       return { key, size, uploaded };
     });
-    return new Response(JSON.stringify({ value: objKeys }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ value: objKeys, folders: objList.delimitedPrefixes }),
+      { headers: { "Content-Type": "application/json" } }
+    );
   } catch (e) {
     return new Response(e.toString(), { status: 500 });
   }

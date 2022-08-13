@@ -28,17 +28,21 @@
   <body>
     <div id="app">
       <form @submit="uploadFile">
-        <input type="text" v-model="cwd" />
         <input type="file" id="file" name="file" />
         <button type="submit">Upload</button>
       </form>
       <ul>
+        <li v-if="cwd !== ''">
+          <div class="file-item" @click="cwd = cwd.replace(/[^\/]+\/$/, '')">
+            <span>..</span>
+          </div>
+        </li>
+        <li v-for="folder in folders">
+          <div class="file-item" v-text="folder" @click="cwd += folder"></div>
+        </li>
         <li v-for="file in files">
-          <a
-            :href="`/drives/${bucket}/${cwd}${file.key}:/content`"
-            target="_blank"
-          >
-            <div class="file-item" v-text="file.key"></div>
+          <a :href="`/drives/${bucket}/${file.key}:/content`" target="_blank">
+            <div class="file-item" v-text="file.key.split('/').pop()"></div>
           </a>
         </li>
       </ul>
@@ -48,7 +52,7 @@
       const { createApp } = Vue;
 
       createApp({
-        data: () => ({ bucket: "BUCKET", cwd: "", files: [] }),
+        data: () => ({ bucket: "BUCKET", cwd: "", files: [], folders: [] }),
 
         methods: {
           fetchFiles() {
@@ -56,6 +60,7 @@
               .then((res) => res.json())
               .then((files) => {
                 this.files = files.value;
+                this.folders = files.folders;
               });
           },
 
@@ -83,8 +88,13 @@
           },
         },
 
-        mounted() {
-          this.fetchFiles();
+        watch: {
+          cwd: {
+            handler() {
+              this.fetchFiles();
+            },
+            immediate: true,
+          },
         },
       }).mount("#app");
     </script>
