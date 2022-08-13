@@ -3,35 +3,48 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FlareDrive</title>
+    <script src="https://unpkg.com/vue@3"></script>
   </head>
   <body>
-    <form>
-      <input type="file" id="file" name="file" />
-      <button type="submit" id="submit">Upload</button>
-    </form>
-    <script type="text/javascript">
-      const submitButton = document.getElementById("submit");
-      submitButton.addEventListener("click", function (event) {
-        event.preventDefault();
-        if (!document.getElementById("file").value) return;
+    <div id="app">
+      <form @submit="uploadFile">
+        <input type="text" v-model="cwd" />
+        <input type="file" id="file" name="file" />
+        <button type="submit">Upload</button>
+      </form>
+    </div>
 
-        const bucket = "BUCKET";
-        var file = document.getElementById("file").files[0];
-        fetch(`/drives/${bucket}/${file.name}:/content`, {
-          method: "PUT",
-          body: file,
-        })
-          .then(async (response) => {
-            if (response.ok) {
-              console.log(await response.json());
-            } else {
-              console.log("Upload failed");
-            }
-          })
-          .catch((error) => {
-            console.log("Upload failed");
-          });
-      });
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data: () => ({ cwd: "" }),
+        methods: {
+          uploadFile(e) {
+            e.preventDefault();
+            if (!document.getElementById("file").value) return;
+
+            if (!this.cwd.endsWith("/")) this.cwd += "/";
+
+            const bucket = "BUCKET";
+            var file = document.getElementById("file").files[0];
+            fetch(`/drives/${bucket}/${this.cwd}${file.name}:/content`, {
+              method: "PUT",
+              body: file,
+            })
+              .then(async (response) => {
+                if (response.ok) {
+                  console.log(await response.json());
+                } else {
+                  console.log("Upload failed");
+                }
+              })
+              .catch((error) => {
+                console.log("Upload failed");
+              });
+          },
+        },
+      }).mount("#app");
     </script>
   </body>
 </html>
