@@ -4,6 +4,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FlareDrive</title>
     <script src="https://unpkg.com/vue@3"></script>
+    <style>
+      ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .file-item {
+        height: 48px;
+        transition: background-color 0.2s ease-in-out;
+      }
+
+      .file-item:hover {
+        background-color: #f5f5f5;
+      }
+    </style>
   </head>
   <body>
     <div id="app">
@@ -18,7 +38,7 @@
             :href="`/drives/${bucket}/${cwd}${file.key}:/content`"
             target="_blank"
           >
-            <span v-text="file.key"></span>
+            <div class="file-item" v-text="file.key"></div>
           </a>
         </li>
       </ul>
