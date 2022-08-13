@@ -16,7 +16,12 @@ export async function onRequestGet(context) {
   const path = decodeURIComponent(itempath.join("/").replace(/:$/, ""));
   const obj = await env[driveid].get(path);
   if (obj === null) return notFound();
-  return new Response(obj.body);
+  return new Response(obj.body, {
+    headers: {
+      "Content-Type": obj.httpMetadata.contentType,
+      "Content-Disposition": `inline; filename="${path.replace(/^.*\//, "")}"`,
+    },
+  });
 }
 
 export async function onRequestPut(context) {
@@ -29,7 +34,7 @@ export async function onRequestPut(context) {
   const obj = await env[driveid].put(path, request.body);
   const { key, size, uploaded } = obj;
   return new Response(JSON.stringify({ key, size, uploaded }), {
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json" },
   });
 }
 

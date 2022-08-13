@@ -12,23 +12,41 @@
         <input type="file" id="file" name="file" />
         <button type="submit">Upload</button>
       </form>
+      <ul>
+        <li v-for="file in files">
+          <a
+            :href="`/drives/${bucket}/${cwd}${file.key}:/content`"
+            target="_blank"
+          >
+            <span v-text="file.key"></span>
+          </a>
+        </li>
+      </ul>
     </div>
 
     <script>
       const { createApp } = Vue;
 
       createApp({
-        data: () => ({ cwd: "" }),
+        data: () => ({ bucket: "BUCKET", cwd: "", files: [] }),
+
         methods: {
+          fetchFiles() {
+            fetch(`/drives/${this.bucket}/${this.cwd}:/children`)
+              .then((res) => res.json())
+              .then((files) => {
+                this.files = files.value;
+              });
+          },
+
           uploadFile(e) {
             e.preventDefault();
             if (!document.getElementById("file").value) return;
 
             if (!this.cwd.endsWith("/")) this.cwd += "/";
 
-            const bucket = "BUCKET";
             var file = document.getElementById("file").files[0];
-            fetch(`/drives/${bucket}/${this.cwd}${file.name}:/content`, {
+            fetch(`/drives/${this.bucket}/${this.cwd}${file.name}:/content`, {
               method: "PUT",
               body: file,
             })
@@ -43,6 +61,10 @@
                 console.log("Upload failed");
               });
           },
+        },
+
+        mounted() {
+          this.fetchFiles();
         },
       }).mount("#app");
     </script>
