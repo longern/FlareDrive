@@ -5,6 +5,10 @@
     <title>FlareDrive</title>
     <script src="https://unpkg.com/vue@3"></script>
     <style>
+      body {
+        font-family: sans-serif;
+      }
+
       ul {
         list-style: none;
         padding-left: 0;
@@ -18,10 +22,20 @@
       .file-item {
         height: 48px;
         transition: background-color 0.2s ease-in-out;
+        display: flex;
+        align-items: center;
       }
 
       .file-item:hover {
         background-color: #f5f5f5;
+      }
+
+      .file-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
     </style>
   </head>
@@ -34,15 +48,34 @@
       <ul>
         <li v-if="cwd !== ''">
           <div class="file-item" @click="cwd = cwd.replace(/[^\/]+\/$/, '')">
+            <div class="file-icon">
+              <img
+                src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
+              />
+            </div>
             <span>..</span>
           </div>
         </li>
         <li v-for="folder in folders">
-          <div class="file-item" v-text="folder" @click="cwd += folder"></div>
+          <div class="file-item" @click="cwd += folder">
+            <div class="file-icon">
+              <img
+                src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
+              />
+            </div>
+            <span v-text="folder"></span>
+          </div>
         </li>
         <li v-for="file in files">
           <a :href="`/drives/${bucket}/${file.key}:/content`" target="_blank">
-            <div class="file-item" v-text="file.key.split('/').pop()"></div>
+            <div class="file-item">
+              <div class="file-icon">
+                <img
+                  src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/image/image/materialicons/36dp/1x/baseline_image_black_36dp.png"
+                />
+              </div>
+              <span v-text="file.key.split('/').pop()"></span>
+            </div>
           </a>
         </li>
       </ul>
