@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FlareDrive</title>
     <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
     <style>
       body {
         font-family: sans-serif;
@@ -56,6 +57,11 @@
   </head>
   <body>
     <div id="app">
+      <progress
+        v-if="uploadProgress !== null"
+        :value="uploadProgress"
+        max="100"
+      ></progress>
       <label class="upload-button">
         <img
           style="filter: invert(100%)"
@@ -103,10 +109,18 @@
       const { createApp } = Vue;
 
       createApp({
-        data: () => ({ bucket: "BUCKET", cwd: "", files: [], folders: [] }),
+        data: () => ({
+          bucket: "BUCKET",
+          cwd: "",
+          files: [],
+          folders: [],
+          uploadProgress: null,
+        }),
 
         methods: {
           fetchFiles() {
+            this.files = [];
+            this.folders = [];
             fetch(`/drives/${this.bucket}/${this.cwd}:/children`)
               .then((res) => res.json())
               .then((files) => {
@@ -120,21 +134,23 @@
             const fileElement = document.getElementById("file");
             if (!fileElement.value) return;
 
-            if (!this.cwd.endsWith("/")) this.cwd += "/";
+            if (this.cwd && !this.cwd.endsWith("/")) this.cwd += "/";
 
             var file = fileElement.files[0];
             fileElement.value = null;
 
-            fetch(`/drives/${this.bucket}/${this.cwd}${file.name}:/content`, {
-              method: "PUT",
-              body: file,
-            })
+            const uploadUrl = `/drives/${this.bucket}/${this.cwd}${file.name}:/content`;
+            axios
+              .put(uploadUrl, file, {
+                onUploadProgress: (progressEvent) => {
+                  var percentCompleted = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                  );
+                  this.uploadProgress = percentCompleted;
+                },
+              })
               .then(async (response) => {
-                if (response.ok) {
-                  console.log(await response.json());
-                } else {
-                  console.log("Upload failed");
-                }
+                this.uploadProgress = null;
               })
               .catch((error) => {
                 console.log("Upload failed");
