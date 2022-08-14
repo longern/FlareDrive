@@ -37,14 +37,32 @@
         align-items: center;
         justify-content: center;
       }
+
+      .upload-button {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgb(243, 128, 32);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+      }
     </style>
   </head>
   <body>
     <div id="app">
-      <form @submit="uploadFile">
-        <input type="file" id="file" name="file" />
-        <button type="submit">Upload</button>
-      </form>
+      <label class="upload-button">
+        <img
+          style="filter: invert(100%)"
+          src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/upload_file/materialicons/36dp/1x/baseline_upload_file_black_36dp.png"
+        />
+        <input type="file" id="file" hidden @change="uploadFile" />
+      </label>
       <ul>
         <li v-if="cwd !== ''">
           <div class="file-item" @click="cwd = cwd.replace(/[^\/]+\/$/, '')">
@@ -99,11 +117,14 @@
 
           uploadFile(e) {
             e.preventDefault();
-            if (!document.getElementById("file").value) return;
+            const fileElement = document.getElementById("file");
+            if (!fileElement.value) return;
 
             if (!this.cwd.endsWith("/")) this.cwd += "/";
 
-            var file = document.getElementById("file").files[0];
+            var file = fileElement.files[0];
+            fileElement.value = null;
+
             fetch(`/drives/${this.bucket}/${this.cwd}${file.name}:/content`, {
               method: "PUT",
               body: file,
