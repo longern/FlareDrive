@@ -25,6 +25,7 @@
         transition: background-color 0.2s ease-in-out;
         display: flex;
         align-items: center;
+        cursor: pointer;
       }
 
       .file-item:hover {
@@ -54,6 +55,7 @@
         box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
       }
     </style>
+    <link rel="icon" type="image/png" href="/favicon.png" />
   </head>
   <body>
     <div id="app">
@@ -71,7 +73,11 @@
       </label>
       <ul>
         <li v-if="cwd !== ''">
-          <div class="file-item" @click="cwd = cwd.replace(/[^\/]+\/$/, '')">
+          <div
+            tabindex="0"
+            class="file-item"
+            @click="cwd = cwd.replace(/[^\/]+\/$/, '')"
+          >
             <div class="file-icon">
               <img
                 src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
