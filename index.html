@@ -40,6 +40,16 @@
         justify-content: center;
       }
 
+      .file-attr {
+        margin-top: 4px;
+        color: gray;
+        font-size: 0.8em;
+      }
+
+      .file-attr > span + span {
+        margin-left: 8px;
+      }
+
       .upload-button {
         position: fixed;
         right: 16px;
@@ -88,7 +98,7 @@
           </div>
         </li>
         <li v-for="folder in folders">
-          <div class="file-item" @click="cwd += folder">
+          <div tabindex="0" class="file-item" @click="cwd += folder">
             <div class="file-icon">
               <img
                 src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
@@ -105,7 +115,15 @@
                   src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/image/image/materialicons/36dp/1x/baseline_image_black_36dp.png"
                 />
               </div>
-              <span v-text="file.key.split('/').pop()"></span>
+              <div>
+                <div v-text="file.key.split('/').pop()"></div>
+                <div class="file-attr">
+                  <span
+                    v-text="new Date(file.uploaded).toLocaleString()"
+                  ></span>
+                  <span v-text="formatSize(file.size)"></span>
+                </div>
+              </div>
             </div>
           </a>
         </li>
@@ -134,6 +152,16 @@
                 this.files = files.value;
                 this.folders = files.folders;
               });
+          },
+
+          formatSize(size) {
+            const units = ["B", "KB", "MB", "GB", "TB"];
+            let i = 0;
+            while (size >= 1024) {
+              size /= 1024;
+              i++;
+            }
+            return `${size.toFixed(1)} ${units[i]}`;
           },
 
           uploadFile(e) {
