@@ -99,7 +99,7 @@
       <div
         style="position: sticky; top: 0; padding: 8px; background-color: white"
       >
-        <input type="search" v-model="search" />
+        <input type="search" v-model="search" aria-label="Search" />
       </div>
       <ul>
         <li v-if="cwd !== ''">
@@ -156,6 +156,12 @@
           </a>
         </li>
       </ul>
+      <div
+        v-if="!filteredFiles.length && !filteredFolders.length"
+        style="margin-top: 12px; text-align: center"
+      >
+        <span>No files</span>
+      </div>
     </div>
 
     <script>
@@ -163,7 +169,8 @@
 
       createApp({
         data: () => ({
-          bucket: "BUCKET",
+          bucket:
+            new URLSearchParams(window.location.search).get("b") || "BUCKET",
           cwd: "",
           files: [],
           folders: [],
@@ -236,6 +243,7 @@
                 },
               })
               .then(async (response) => {
+                this.fetchFiles();
                 this.uploadProgress = null;
               })
               .catch((error) => {
