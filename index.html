@@ -156,8 +156,11 @@
           </a>
         </li>
       </ul>
+      <div v-if="loading" style="margin-top: 12px; text-align: center">
+        <span>Loading...</span>
+      </div>
       <div
-        v-if="!filteredFiles.length && !filteredFolders.length"
+        v-else-if="!filteredFiles.length && !filteredFolders.length"
         style="margin-top: 12px; text-align: center"
       >
         <span>No files</span>
@@ -174,6 +177,7 @@
           cwd: "",
           files: [],
           folders: [],
+          loading: false,
           search: "",
           uploadProgress: null,
         }),
@@ -204,11 +208,13 @@
           fetchFiles() {
             this.files = [];
             this.folders = [];
+            this.loading = true;
             fetch(`/drives/${this.bucket}/${this.cwd}:/children`)
               .then((res) => res.json())
               .then((files) => {
                 this.files = files.value;
                 this.folders = files.folders;
+                this.loading = false;
               });
           },
 
