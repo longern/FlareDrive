@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -14,6 +15,7 @@
       ul {
         list-style: none;
         padding-left: 0;
+        margin: 0;
       }
 
       a {
@@ -51,7 +53,7 @@
 
       .file-attr {
         margin-top: 4px;
-        color: gray;
+        color: dimgray;
         font-size: 0.8em;
       }
 
@@ -84,10 +86,13 @@
         :value="uploadProgress"
         max="100"
       ></progress>
-      <label class="upload-button">
+      <label class="upload-button" tabindex="0">
         <img
           style="filter: invert(100%)"
           src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/upload_file/materialicons/36dp/1x/baseline_upload_file_black_36dp.png"
+          alt="Upload"
+          width="36"
+          height="36"
         />
         <input type="file" id="file" hidden @change="uploadFile" />
       </label>
@@ -106,6 +111,9 @@
             <div class="file-icon">
               <img
                 src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
+                width="36"
+                height="36"
+                alt="Folder"
               />
             </div>
             <span>..</span>
@@ -116,6 +124,9 @@
             <div class="file-icon">
               <img
                 src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
+                width="36"
+                height="36"
+                alt="Folder"
               />
             </div>
             <span v-text="folder"></span>
@@ -127,6 +138,9 @@
               <div class="file-icon">
                 <img
                   src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/image/image/materialicons/36dp/1x/baseline_image_black_36dp.png"
+                  width="36"
+                  height="36"
+                  alt="Image"
                 />
               </div>
               <div>
