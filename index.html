@@ -8,6 +8,7 @@
     <style>
       body {
         font-family: sans-serif;
+        margin: 0;
       }
 
       ul {
@@ -18,6 +19,14 @@
       a {
         text-decoration: none;
         color: inherit;
+      }
+
+      input[type="search"] {
+        background-color: whitesmoke;
+        border: none;
+        border-radius: 6px;
+        width: 100%;
+        padding: 8px;
       }
 
       .file-item {
@@ -82,6 +91,11 @@
         />
         <input type="file" id="file" hidden @change="uploadFile" />
       </label>
+      <div
+        style="position: sticky; top: 0; padding: 8px; background-color: white"
+      >
+        <input type="search" v-model="search" />
+      </div>
       <ul>
         <li v-if="cwd !== ''">
           <div
@@ -97,7 +111,7 @@
             <span>..</span>
           </div>
         </li>
-        <li v-for="folder in folders">
+        <li v-for="folder in filteredFolders">
           <div tabindex="0" class="file-item" @click="cwd += folder">
             <div class="file-icon">
               <img
@@ -107,7 +121,7 @@
             <span v-text="folder"></span>
           </div>
         </li>
-        <li v-for="file in files">
+        <li v-for="file in filteredFiles">
           <a :href="`/drives/${bucket}/${file.key}:/content`" target="_blank">
             <div class="file-item">
               <div class="file-icon">
@@ -139,8 +153,31 @@
           cwd: "",
           files: [],
           folders: [],
+          search: "",
           uploadProgress: null,
         }),
+
+        computed: {
+          filteredFiles() {
+            let files = this.files;
+            if (this.search) {
+              files = files.filter((file) =>
+                file.key.split("/").pop().includes(this.search)
+              );
+            }
+            return files;
+          },
+
+          filteredFolders() {
+            let folders = this.folders;
+            if (this.search) {
+              folders = folders.filter((folder) =>
+                folder.includes(this.search)
+              );
+            }
+            return folders;
+          },
+        },
 
         methods: {
           fetchFiles() {
