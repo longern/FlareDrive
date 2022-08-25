@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FlareDrive</title>
-    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.37/vue.global.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
     <style>
       body {
@@ -33,6 +33,7 @@
 
       .file-item {
         height: 48px;
+        padding: 8px 0;
         transition: background-color 0.2s ease-in-out;
         display: flex;
         align-items: center;
@@ -89,7 +90,7 @@
       <label class="upload-button" tabindex="0">
         <img
           style="filter: invert(100%)"
-          src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/upload_file/materialicons/36dp/1x/baseline_upload_file_black_36dp.png"
+          src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/upload_file/materialicons/36dp/2x/baseline_upload_file_black_36dp.png"
           alt="Upload"
           width="36"
           height="36"
@@ -110,7 +111,7 @@
           >
             <div class="file-icon">
               <img
-                src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
+                src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/2x/baseline_folder_black_36dp.png"
                 width="36"
                 height="36"
                 alt="Folder"
@@ -123,7 +124,7 @@
           <div tabindex="0" class="file-item" @click="cwd += folder">
             <div class="file-icon">
               <img
-                src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/1x/baseline_folder_black_36dp.png"
+                src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/2x/baseline_folder_black_36dp.png"
                 width="36"
                 height="36"
                 alt="Folder"
@@ -137,7 +138,7 @@
             <div class="file-item">
               <div class="file-icon">
                 <img
-                  src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/image/image/materialicons/36dp/1x/baseline_image_black_36dp.png"
+                  src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/image/image/materialicons/36dp/2x/baseline_image_black_36dp.png"
                   width="36"
                   height="36"
                   alt="Image"
