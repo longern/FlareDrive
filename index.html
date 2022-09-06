@@ -95,7 +95,7 @@
           width="36"
           height="36"
         />
-        <input type="file" id="file" hidden @change="uploadFile" />
+        <input type="file" id="file" multiple hidden @change="uploadFile" />
       </label>
       <div
         style="position: sticky; top: 0; padding: 8px; background-color: white"
@@ -181,6 +181,7 @@
           loading: false,
           search: "",
           uploadProgress: null,
+          uploadQueue: [],
         }),
 
         computed: {
@@ -229,6 +230,30 @@
             return `${size.toFixed(1)} ${units[i]}`;
           },
 
+          async processUploadQueue() {
+            if (!this.uploadQueue.length) {
+              this.fetchFiles();
+              this.uploadProgress = null;
+              return;
+            }
+
+            const file = this.uploadQueue.pop(0);
+            try {
+              const uploadUrl = `/drives/${this.bucket}/${this.cwd}${file.name}:/content`;
+              await axios.put(uploadUrl, file, {
+                onUploadProgress: (progressEvent) => {
+                  var percentCompleted = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                  );
+                  this.uploadProgress = percentCompleted;
+                },
+              });
+            } catch (error) {
+              console.log(`Upload ${file.name} failed`);
+            }
+            setTimeout(this.processUploadQueue);
+          },
+
           uploadFile(e) {
             e.preventDefault();
             const fileElement = document.getElementById("file");
@@ -236,26 +261,9 @@
 
             if (this.cwd && !this.cwd.endsWith("/")) this.cwd += "/";
 
-            var file = fileElement.files[0];
+            this.uploadQueue.push(...fileElement.files);
             fileElement.value = null;
-
-            const uploadUrl = `/drives/${this.bucket}/${this.cwd}${file.name}:/content`;
-            axios
-              .put(uploadUrl, file, {
-                onUploadProgress: (progressEvent) => {
-                  var percentCompleted = Math.round(
-                    (progressEvent.loaded * 100) / progressEvent.total
-                  );
-                  this.uploadProgress = percentCompleted;
-                },
-              })
-              .then(async (response) => {
-                this.fetchFiles();
-                this.uploadProgress = null;
-              })
-              .catch((error) => {
-                console.log("Upload failed");
-              });
+            this.processUploadQueue();
           },
         },
 
