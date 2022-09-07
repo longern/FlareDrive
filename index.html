@@ -134,7 +134,7 @@
           </div>
         </li>
         <li v-for="file in filteredFiles">
-          <a :href="`/drives/${bucket}/${file.key}:/content`" target="_blank">
+          <a :href="`/raw/${file.key}`" target="_blank">
             <div class="file-item">
               <div class="file-icon">
                 <img
@@ -211,7 +211,7 @@
             this.files = [];
             this.folders = [];
             this.loading = true;
-            fetch(`/drives/${this.bucket}/${this.cwd}:/children`)
+            fetch(`/api/children/${this.cwd}`)
               .then((res) => res.json())
               .then((files) => {
                 this.files = files.value;
@@ -239,7 +239,7 @@
 
             const file = this.uploadQueue.pop(0);
             try {
-              const uploadUrl = `/drives/${this.bucket}/${this.cwd}${file.name}:/content`;
+              const uploadUrl = `/api/items/${this.cwd}${file.name}`;
               await axios.put(uploadUrl, file, {
                 onUploadProgress: (progressEvent) => {
                   var percentCompleted = Math.round(
