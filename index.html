@@ -236,6 +236,46 @@
             }
 
             const file = this.uploadQueue.pop(0);
+            let thumbnailUrl = null;
+
+            if (file.type.startsWith("image/")) {
+              const fileDataUrl = await new Promise((resolve) => {
+                var reader = new FileReader();
+                reader.onload = (readerEvent) =>
+                  resolve(readerEvent.target.result);
+                reader.readAsDataURL(file);
+              });
+
+              const image = await new Promise((resolve) => {
+                var image = new Image();
+                image.onload = () => resolve(image);
+                image.src = fileDataUrl;
+              });
+
+              const canvas = document.createElement("canvas");
+              canvas.width = 144;
+              canvas.height = 144;
+              var ctx = canvas.getContext("2d");
+              ctx.drawImage(image, 0, 0, 144, 144);
+
+              const thumbnailBlob = await new Promise((resolve) =>
+                canvas.toBlob((blob) => resolve(blob))
+              );
+
+              const digest = await crypto.subtle.digest(
+                "SHA-1",
+                await thumbnailBlob.arrayBuffer()
+              );
+              const digestArray = Array.from(new Uint8Array(digest));
+              const digestHex = digestArray
+                .map((b) => b.toString(16).padStart(2, "0"))
+                .join("");
+
+              const thumbnailUploadUrl = `/api/items/_$flaredrive$/${digestHex}.png`;
+              await axios.put(thumbnailUploadUrl, thumbnailBlob);
+              thumbnailUrl = `/raw/_$flaredrive$/${digestHex}.png`;
+            }
+
             try {
               const uploadUrl = `/api/items/${this.cwd}${file.name}`;
               await axios.put(uploadUrl, file, {
