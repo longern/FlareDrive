@@ -1,7 +1,7 @@
 export async function onRequestGet(context) {
   try {
     const { request, env, params } = context;
-    const path = decodeURIComponent((params.path || []).join("/"));
+    const path = (params.path || []).map(dir => decodeURIComponent(dir) + "/").join("");
     const driveid = new URL(request.url).hostname.replace(/\..*/, "");
 
     const objList = await env[driveid].list({ prefix: path, delimiter: "/" });
@@ -9,8 +9,12 @@ export async function onRequestGet(context) {
       const { key, size, uploaded } = obj;
       return { key, size, uploaded };
     });
+
+    let folders = objList.delimitedPrefixes;
+    if (!path) folders = folders.filter(folder => folder !== "_$flaredrive$/")
+
     return new Response(
-      JSON.stringify({ value: objKeys, folders: objList.delimitedPrefixes }),
+      JSON.stringify({ value: objKeys, folders }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (e) {
