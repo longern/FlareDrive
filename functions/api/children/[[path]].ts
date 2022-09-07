@@ -6,8 +6,8 @@ export async function onRequestGet(context) {
 
     const objList = await env[driveid].list({ prefix: path, delimiter: "/" });
     const objKeys = objList.objects.map((obj) => {
-      const { key, size, uploaded } = obj;
-      return { key, size, uploaded };
+      const { key, size, uploaded, customMetadata } = obj;
+      return { key, size, uploaded, customMetadata };
     });
 
     let folders = objList.delimitedPrefixes;

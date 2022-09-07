@@ -9,7 +9,11 @@ export async function onRequestPut(context) {
 
   if (!env[driveid]) return notFound();
 
-  const obj = await env[driveid].put(path, request.body);
+  const customMetadata: Record<string, string> = {};
+  if (request.headers.has("fd-thumbnail"))
+    customMetadata.thumbnail = request.headers.get("fd-thumbnail")
+
+  const obj = await env[driveid].put(path, request.body, { customMetadata });
   const { key, size, uploaded } = obj;
   return new Response(JSON.stringify({ key, size, uploaded }), {
     headers: { "Content-Type": "application/json" },

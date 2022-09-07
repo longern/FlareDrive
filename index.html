@@ -236,7 +236,7 @@
             }
 
             const file = this.uploadQueue.pop(0);
-            let thumbnailUrl = null;
+            let thumbnailDigest = null;
 
             if (file.type.startsWith("image/")) {
               const fileDataUrl = await new Promise((resolve) => {
@@ -273,12 +273,13 @@
 
               const thumbnailUploadUrl = `/api/items/_$flaredrive$/${digestHex}.png`;
               await axios.put(thumbnailUploadUrl, thumbnailBlob);
-              thumbnailUrl = `/raw/_$flaredrive$/${digestHex}.png`;
+              thumbnailDigest = `/raw/_$flaredrive$/${digestHex}.png`;
             }
 
             try {
               const uploadUrl = `/api/items/${this.cwd}${file.name}`;
               await axios.put(uploadUrl, file, {
+                headers: { "fd-thumbnail": thumbnailDigest },
                 onUploadProgress: (progressEvent) => {
                   var percentCompleted = Math.round(
                     (progressEvent.loaded * 100) / progressEvent.total
