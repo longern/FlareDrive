@@ -138,6 +138,14 @@
             <div class="file-item">
               <div class="file-icon">
                 <img
+                  v-if="file.customMetadata.thumbnail"
+                  :src="`/raw/_$flaredrive$/thumbnails/${file.customMetadata.thumbnail}.png`"
+                  width="36"
+                  height="36"
+                  alt="Image"
+                />
+                <img
+                  v-else
                   src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/image/image/materialicons/36dp/2x/baseline_image_black_36dp.png"
                   width="36"
                   height="36"
@@ -271,9 +279,9 @@
                 .map((b) => b.toString(16).padStart(2, "0"))
                 .join("");
 
-              const thumbnailUploadUrl = `/api/items/_$flaredrive$/${digestHex}.png`;
+              const thumbnailUploadUrl = `/api/items/_$flaredrive$/thumbnails/${digestHex}.png`;
               await axios.put(thumbnailUploadUrl, thumbnailBlob);
-              thumbnailDigest = `/raw/_$flaredrive$/${digestHex}.png`;
+              thumbnailDigest = digestHex;
             }
 
             try {
