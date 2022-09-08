@@ -63,6 +63,12 @@
         margin-left: 8px;
       }
 
+      progress {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+      }
+
       .upload-button {
         position: fixed;
         right: 16px;
@@ -287,8 +293,10 @@
 
             try {
               const uploadUrl = `/api/items/${this.cwd}${file.name}`;
+              const headers = {};
+              if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
               await axios.put(uploadUrl, file, {
-                headers: { "fd-thumbnail": thumbnailDigest },
+                headers,
                 onUploadProgress: (progressEvent) => {
                   var percentCompleted = Math.round(
                     (progressEvent.loaded * 100) / progressEvent.total
