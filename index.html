@@ -254,17 +254,10 @@
             let thumbnailDigest = null;
 
             if (file.type.startsWith("image/")) {
-              const fileDataUrl = await new Promise((resolve) => {
-                var reader = new FileReader();
-                reader.onload = (readerEvent) =>
-                  resolve(readerEvent.target.result);
-                reader.readAsDataURL(file);
-              });
-
               const image = await new Promise((resolve) => {
                 var image = new Image();
                 image.onload = () => resolve(image);
-                image.src = fileDataUrl;
+                image.src = URL.createObjectURL(file);
               });
 
               const canvas = document.createElement("canvas");
