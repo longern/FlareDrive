@@ -44,6 +44,10 @@
         background-color: #f5f5f5;
       }
 
+      .file-item > div {
+        min-width: 0;
+      }
+
       .file-icon {
         width: 48px;
         height: 48px;
@@ -51,6 +55,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+
+      .file-name {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
       }
 
       .file-attr {
@@ -143,7 +153,7 @@
                 alt="Folder"
               />
             </div>
-            <span>..</span>
+            <span class="file-name">..</span>
           </div>
         </li>
         <li v-for="folder in filteredFolders">
@@ -156,7 +166,7 @@
                 alt="Folder"
               />
             </div>
-            <span v-text="folder"></span>
+            <span class="file-name" v-text="folder"></span>
           </div>
         </li>
         <li v-for="file in filteredFiles">
@@ -179,7 +189,7 @@
                 />
               </div>
               <div>
-                <div v-text="file.key.split('/').pop()"></div>
+                <div class="file-name" v-text="file.key.split('/').pop()"></div>
                 <div class="file-attr">
                   <span
                     v-text="new Date(file.uploaded).toLocaleString()"
