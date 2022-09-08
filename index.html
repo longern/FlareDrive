@@ -69,10 +69,9 @@
         width: 100%;
       }
 
-      .upload-button {
+      .upload-button,
+      .create-folder-button {
         position: fixed;
-        right: 16px;
-        bottom: 16px;
         width: 48px;
         height: 48px;
         display: flex;
@@ -82,6 +81,16 @@
         border-radius: 50%;
         cursor: pointer;
         box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .upload-button {
+        right: 16px;
+        bottom: 16px;
+      }
+
+      .create-folder-button {
+        right: 16px;
+        bottom: 80px;
       }
     </style>
     <link rel="manifest" href="manifest.json" />
@@ -94,6 +103,16 @@
         :value="uploadProgress"
         max="100"
       ></progress>
+      <label class="create-folder-button" tabindex="0">
+        <img
+          style="filter: invert(100%)"
+          src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/create_new_folder/materialicons/36dp/2x/baseline_create_new_folder_black_36dp.png"
+          alt="Create folder"
+          width="36"
+          height="36"
+        />
+        <button hidden @click="createFolder"></button>
+      </label>
       <label class="upload-button" tabindex="0">
         <img
           style="filter: invert(100%)"
@@ -220,6 +239,17 @@
         },
 
         methods: {
+          async createFolder() {
+            try {
+              const folderName = window.prompt("Folder name");
+              if (!folderName) return;
+              const uploadUrl = `/api/items/${this.cwd}${folderName}/_$folder$`;
+              await axios.put(uploadUrl, "");
+            } catch (error) {
+              console.log(`Create folder failed`);
+            }
+          },
+
           fetchFiles() {
             this.files = [];
             this.folders = [];
