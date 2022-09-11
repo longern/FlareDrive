@@ -11,7 +11,11 @@ export async function onRequestGet(context) {
 
   const obj = await env[driveid].get(path);
   if (obj === null) return notFound();
-  return new Response(obj.body, {
-    headers: { "Content-Type": obj.httpMetadata.contentType },
-  });
+
+  const headers = new Headers();
+  obj.writeHttpMetadata(headers);
+  if (path.startsWith("_$flaredrive$/thumbnails/"))
+    headers.set("Cache-Control", "max-age=31536000");
+
+  return new Response(obj.body, { headers });
 }
