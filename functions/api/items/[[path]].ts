@@ -11,7 +11,7 @@ export async function onRequestPut(context) {
 
   const customMetadata: Record<string, string> = {};
   if (request.headers.has("fd-thumbnail"))
-    customMetadata.thumbnail = request.headers.get("fd-thumbnail")
+    customMetadata.thumbnail = request.headers.get("fd-thumbnail");
 
   const obj = await env[driveid].put(path, request.body, { customMetadata });
   const { key, size, uploaded } = obj;
