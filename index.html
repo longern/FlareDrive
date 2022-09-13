@@ -258,7 +258,7 @@
 
       createApp({
         data: () => ({
-          cwd: "",
+          cwd: new URL(window.location).searchParams.get("p") || "",
           files: [],
           folders: [],
           loading: false,
@@ -401,9 +401,22 @@
           cwd: {
             handler() {
               this.fetchFiles();
+              const url = new URL(window.location);
+              if (url.searchParams.get("p") !== this.cwd) {
+                url.searchParams.set("p", this.cwd);
+                window.history.pushState(null, "", url.toString());
+              }
             },
             immediate: true,
           },
+        },
+
+        created() {
+          window.addEventListener("popstate", (ev) => {
+            const searchParams = new URL(window.location).searchParams;
+            if (searchParams.get("p") !== this.cwd)
+              this.cwd = searchParams.get("p") || "";
+          });
         },
       }).mount("#app");
     </script>
