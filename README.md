@@ -6,6 +6,6 @@ CloudFlare R2 storage manager with Pages and Workers. Free 10 GB storage. Free s
 
 1. Fork this project
 2. Connect your fork with CloudFlare
-3. Add a custom domain (e.g. my-drive.domain.com)
-4. Add R2 buckets. Set variable name as subdomain prefix (e.g. `my-drive`)
+3. Add a custom domain (e.g. mydrive.domain.com)
+4. Add R2 buckets. Set variable name as subdomain prefix (e.g. `mydrive`)
 5. Manually redeploy to make R2 bindings take effect.
