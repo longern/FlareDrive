@@ -157,7 +157,7 @@
           </div>
         </li>
         <li v-for="folder in filteredFolders">
-          <div tabindex="0" class="file-item" @click="cwd += folder">
+          <div tabindex="0" class="file-item" @click="cwd = folder">
             <div class="file-icon">
               <img
                 src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/2x/baseline_folder_black_36dp.png"
@@ -166,7 +166,10 @@
                 alt="Folder"
               />
             </div>
-            <span class="file-name" v-text="folder"></span>
+            <span
+              class="file-name"
+              v-text="folder.match(/.*?([^/]*)\/?$/)[1]"
+            ></span>
           </div>
         </li>
         <li v-for="file in filteredFiles">
