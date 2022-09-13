@@ -402,10 +402,13 @@
             handler() {
               this.fetchFiles();
               const url = new URL(window.location);
-              if (url.searchParams.get("p") !== this.cwd) {
+              if ((url.searchParams.get("p") || "") !== this.cwd) {
                 url.searchParams.set("p", this.cwd);
                 window.history.pushState(null, "", url.toString());
               }
+              document.title = `${
+                this.cwd.replace(/.*\/(?!$)|\//g, "") || "/"
+              } - FlareDrive`;
             },
             immediate: true,
           },
