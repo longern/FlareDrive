@@ -13,9 +13,21 @@
       }
 
       ul {
+        display: flex;
+        flex-wrap: wrap;
         list-style: none;
         padding-left: 0;
         margin: 0;
+      }
+
+      ul > li {
+        width: 33.33%;
+      }
+
+      @media only screen and (max-width: 768px) {
+        ul > li {
+          width: 100%;
+        }
       }
 
       a {
