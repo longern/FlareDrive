@@ -7,25 +7,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.37/vue.global.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script>
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         font-family: sans-serif;
         margin: 0;
       }
 
       ul {
-        display: flex;
-        flex-wrap: wrap;
         list-style: none;
         padding-left: 0;
         margin: 0;
       }
 
-      ul > li {
+      .file-list {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .file-list > li {
         width: 33.33%;
       }
 
       @media only screen and (max-width: 768px) {
-        ul > li {
+        .file-list > li {
           width: 100%;
         }
       }
@@ -44,12 +51,13 @@
       }
 
       .file-item {
-        height: 48px;
+        height: 64px;
         padding: 8px 0;
         transition: background-color 0.2s ease-in-out;
         display: flex;
         align-items: center;
         cursor: pointer;
+        user-select: none;
       }
 
       .file-item:hover {
@@ -114,6 +122,45 @@
         right: 16px;
         bottom: 80px;
       }
+
+      .contextmenu-mask {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9998;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .contextmenu-container {
+        background-color: white;
+        width: 300px;
+        padding: 8px 0;
+        border-radius: 8px;
+      }
+
+      .contextmenu-list > li > * {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        text-align: left;
+        transition: background-color 0.2s ease-in-out;
+        font-size: inherit;
+      }
+
+      .contextmenu-list > li > *:hover {
+        background-color: whitesmoke;
+      }
+
+      button {
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
     </style>
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -150,12 +197,13 @@
       >
         <input type="search" v-model="search" aria-label="Search" />
       </div>
-      <ul>
+      <ul class="file-list">
         <li v-if="cwd !== ''">
           <div
             tabindex="0"
             class="file-item"
             @click="cwd = cwd.replace(/[^\/]+\/$/, '')"
+            @contextmenu.prevent
           >
             <div class="file-icon">
               <img
@@ -169,7 +217,12 @@
           </div>
         </li>
         <li v-for="folder in filteredFolders">
-          <div tabindex="0" class="file-item" @click="cwd = folder">
+          <div
+            tabindex="0"
+            class="file-item"
+            @click="cwd = folder"
+            @contextmenu.prevent="showMenu = true; focusedItem = folder"
+          >
             <div class="file-icon">
               <img
                 src="https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/4.0.0/png/file/folder/materialicons/36dp/2x/baseline_folder_black_36dp.png"
@@ -185,7 +238,11 @@
           </div>
         </li>
         <li v-for="file in filteredFiles">
-          <a :href="`/raw/${file.key}`" target="_blank">
+          <a
+            :href="`/raw/${file.key}`"
+            target="_blank"
+            @contextmenu.prevent="showMenu = true; focusedItem = file"
+          >
             <div class="file-item">
               <div class="file-icon">
                 <img
@@ -278,6 +335,39 @@
       >
         <span>No files</span>
       </div>
+      <div v-if="showMenu" class="contextmenu-mask" @click="showMenu = false">
+        <div class="contextmenu-container">
+          <ul v-if="typeof(focusedItem) === 'string'" class="contextmenu-list">
+            <li>
+              <button
+                @click="copyLink(`/?p=${encodeURIComponent(focusedItem)}`)"
+              >
+                <span>Copy Link</span>
+              </button>
+            </li>
+            <li>
+              <button style="color: red">Remove</button>
+            </li>
+          </ul>
+          <ul v-else class="contextmenu-list">
+            <li>
+              <a :href="`/raw/${focusedItem.key}`" target="_blank" download>
+                <span>Download</span>
+              </a>
+            </li>
+            <li>
+              <button @click="copyLink(`/raw/${focusedItem.key}`)">
+                <span>Copy Link</span>
+              </button>
+            </li>
+            <li>
+              <button style="color: red" @click="removeFile(focusedItem.key)">
+                <span>Remove</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -288,8 +378,10 @@
           cwd: new URL(window.location).searchParams.get("p") || "",
           files: [],
           folders: [],
+          focusedItem: null,
           loading: false,
           search: "",
+          showMenu: false,
           uploadProgress: null,
           uploadQueue: [],
         }),
@@ -317,6 +409,11 @@
         },
 
         methods: {
+          copyLink(link) {
+            const url = new URL(link, window.location.origin);
+            navigator.clipboard.writeText(url.toString());
+          },
+
           async createFolder() {
             try {
               const folderName = window.prompt("Folder name");
@@ -424,6 +521,11 @@
               console.log(`Upload ${file.name} failed`);
             }
             setTimeout(this.processUploadQueue);
+          },
+
+          async removeFile(key) {
+            await axios.delete(`/api/items/${key}`);
+            this.fetchFiles();
           },
 
           uploadFile(e) {
