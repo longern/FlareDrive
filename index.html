@@ -323,12 +323,13 @@
               if (!folderName) return;
               const uploadUrl = `/api/items/${this.cwd}${folderName}/_$folder$`;
               await axios.put(uploadUrl, "");
+              this.fetchFiles();
             } catch (error) {
               fetch("/api/items/")
                 .then((value) => {
                   if (value.redirected) window.location.href = value.url;
                 })
-                .catch((error) => {});
+                .catch(() => {});
               console.log(`Create folder failed`);
             }
           },
@@ -419,7 +420,7 @@
                 .then((value) => {
                   if (value.redirected) window.location.href = value.url;
                 })
-                .catch((error) => {});
+                .catch(() => {});
               console.log(`Upload ${file.name} failed`);
             }
             setTimeout(this.processUploadQueue);
