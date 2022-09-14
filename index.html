@@ -324,6 +324,11 @@
               const uploadUrl = `/api/items/${this.cwd}${folderName}/_$folder$`;
               await axios.put(uploadUrl, "");
             } catch (error) {
+              fetch("/api/items/")
+                .then((value) => {
+                  if (value.redirected) window.location.href = value.url;
+                })
+                .catch((error) => {});
               console.log(`Create folder failed`);
             }
           },
@@ -388,8 +393,12 @@
                 .join("");
 
               const thumbnailUploadUrl = `/api/items/_$flaredrive$/thumbnails/${digestHex}.png`;
-              await axios.put(thumbnailUploadUrl, thumbnailBlob);
-              thumbnailDigest = digestHex;
+              try {
+                await axios.put(thumbnailUploadUrl, thumbnailBlob);
+                thumbnailDigest = digestHex;
+              } catch (error) {
+                console.log(`Upload ${digestHex}.png failed`);
+              }
             }
 
             try {
@@ -406,6 +415,11 @@
                 },
               });
             } catch (error) {
+              fetch("/api/items/")
+                .then((value) => {
+                  if (value.redirected) window.location.href = value.url;
+                })
+                .catch((error) => {});
               console.log(`Upload ${file.name} failed`);
             }
             setTimeout(this.processUploadQueue);
