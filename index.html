@@ -351,6 +351,11 @@
           </ul>
           <ul v-else class="contextmenu-list">
             <li>
+              <button @click="renameFile(focusedItem.key)">
+                <span>Rename</span>
+              </button>
+            </li>
+            <li>
               <a :href="`/raw/${focusedItem.key}`" target="_blank" download>
                 <span>Download</span>
               </a>
@@ -524,6 +529,17 @@
           },
 
           async removeFile(key) {
+            await axios.delete(`/api/items/${key}`);
+            this.fetchFiles();
+          },
+
+          async renameFile(key) {
+            const newName = window.prompt("Rename to:");
+            if (!newName) return;
+            const uploadUrl = `/api/items/${this.cwd}${newName}`;
+            await axios.put(uploadUrl, "", {
+              headers: { "x-amz-copy-source": encodeURIComponent(key) },
+            });
             await axios.delete(`/api/items/${key}`);
             this.fetchFiles();
           },

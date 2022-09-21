@@ -9,11 +9,21 @@ export async function onRequestPut(context) {
 
   if (!env[driveid]) return notFound();
 
+  let content = request.body;
   const customMetadata: Record<string, string> = {};
+
+  if (request.headers.has("x-amz-copy-source")) {
+    const sourceName = decodeURIComponent(request.headers.get("x-amz-copy-source"));
+    const source = await env[driveid].get(sourceName);
+    content = source.body;
+    if (source.customMetadata.thumbnail)
+      customMetadata.thumbnail = source.customMetadata.thumbnail
+  }
+
   if (request.headers.has("fd-thumbnail"))
     customMetadata.thumbnail = request.headers.get("fd-thumbnail");
 
-  const obj = await env[driveid].put(path, request.body, { customMetadata });
+  const obj = await env[driveid].put(path, content, { customMetadata });
   const { key, size, uploaded } = obj;
   return new Response(JSON.stringify({ key, size, uploaded }), {
     headers: { "Content-Type": "application/json" },
