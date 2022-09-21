@@ -563,7 +563,9 @@
               this.fetchFiles();
               const url = new URL(window.location);
               if ((url.searchParams.get("p") || "") !== this.cwd) {
-                url.searchParams.set("p", this.cwd);
+                this.cwd
+                  ? url.searchParams.set("p", this.cwd)
+                  : url.searchParams.delete("p");
                 window.history.pushState(null, "", url.toString());
               }
               document.title = `${
