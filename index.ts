@@ -10,6 +10,6 @@ for (const variable of [
 ]) {
   const value = process.env[variable];
   if (typeof value !== "string") throw new Error(`${variable} not defined`);
-  args.splice(args.length, 0, "-b", `${variable}=${value}`);
+  args.splice(args.length, 0, "--r2", "127", "-b", `${variable}=${value}`);
 }
 spawnSync("wrangler", args, { stdio: "inherit" });
