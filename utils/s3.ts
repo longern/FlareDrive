@@ -32,10 +32,7 @@ export class S3Client {
     init = init || {};
     const url = new URL(input);
     const method = init.method || "GET";
-    const body = <BufferSource>init.body || new ArrayBuffer(0);
-    const hashedPayload = arrayBufferToHex(
-      await crypto.subtle.digest("SHA-256", body)
-    );
+    const hashedPayload = "UNSIGNED-PAYLOAD";
     const headers = new Headers(init.headers);
     const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "");
     headers.set("x-amz-date", datetime);
@@ -44,7 +41,9 @@ export class S3Client {
     const canonicalHeaders = [...headers.keys()]
       .map((key) => `${key}:${headers.get(key)}\n`)
       .join("");
-    const signedHeaderKeys = [...headers.keys()];
+    const signedHeaderKeys = [...headers.keys()].filter(
+      (header) => header === "host" || header.startsWith("x-amz-")
+    );
     const signedHeaders = signedHeaderKeys.join(";");
     const canonicalRequest = [
       method,
