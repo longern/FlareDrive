@@ -1,0 +1,23 @@
+{
+  "name": "flaredrive",
+  "version": "0.0.1",
+  "description": "CloudFlare R2 storage manager with Pages and Workers.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/longern/FlareDrive.git"
+  },
+  "author": "longern",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/longern/FlareDrive/issues"
+  },
+  "homepage": "https://github.com/longern/FlareDrive#readme",
+  "devDependencies": {
+    "@types/node": "^18.7.19",
+    "dotenv": "^16.0.2"
+  }
+}
