@@ -32,6 +32,12 @@ export class S3Client {
     init = init || {};
     const url = new URL(input);
     const method = init.method || "GET";
+    const canonicalQueryString = [...url.searchParams]
+      .map(
+        ([key, value]) =>
+          encodeURIComponent(key) + "=" + encodeURIComponent(value)
+      )
+      .join("&");
     const hashedPayload = "UNSIGNED-PAYLOAD";
     const headers = new Headers(init.headers);
     const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "");
@@ -48,7 +54,7 @@ export class S3Client {
     const canonicalRequest = [
       method,
       url.pathname,
-      url.searchParams.toString(),
+      canonicalQueryString,
       canonicalHeaders,
       signedHeaders,
       hashedPayload,
