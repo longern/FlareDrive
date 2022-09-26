@@ -2,9 +2,8 @@
   "name": "flaredrive",
   "version": "0.0.1",
   "description": "CloudFlare R2 storage manager with Pages and Workers.",
-  "main": "index.js",
   "scripts": {
-    "dev": "ts-node index.ts"
+    "dev": "ts-node main.ts"
   },
   "repository": {
     "type": "git",
