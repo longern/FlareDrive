@@ -13,11 +13,13 @@ export async function onRequestPut(context) {
   const customMetadata: Record<string, string> = {};
 
   if (request.headers.has("x-amz-copy-source")) {
-    const sourceName = decodeURIComponent(request.headers.get("x-amz-copy-source"));
+    const sourceName = decodeURIComponent(
+      request.headers.get("x-amz-copy-source")
+    );
     const source = await env[driveid].get(sourceName);
     content = source.body;
     if (source.customMetadata.thumbnail)
-      customMetadata.thumbnail = source.customMetadata.thumbnail
+      customMetadata.thumbnail = source.customMetadata.thumbnail;
   }
 
   if (request.headers.has("fd-thumbnail"))

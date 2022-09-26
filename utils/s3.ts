@@ -28,7 +28,7 @@ export class S3Client {
     this.region = region || "auto";
   }
 
-  public async s3_fetch(input: string | URL, init?: RequestInit) {
+  public async s3_fetch(input: string, init?: RequestInit) {
     init = init || {};
     const url = new URL(input);
     const method = init.method || "GET";
