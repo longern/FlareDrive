@@ -53,7 +53,7 @@ export class S3Client {
     const signedHeaders = signedHeaderKeys.join(";");
     const canonicalRequest = [
       method,
-      url.pathname,
+      encodeURIComponent(url.pathname).replaceAll("%2F", "/"),
       canonicalQueryString,
       canonicalHeaders,
       signedHeaders,

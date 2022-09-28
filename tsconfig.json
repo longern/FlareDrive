@@ -1,13 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2021",
     "module": "CommonJS",
-    "lib": ["ES2020"],
-		"types": [
-			"@cloudflare/workers-types"
-    ],
+    "lib": ["ES2021"],
+    "types": ["@cloudflare/workers-types"],
     "paths": {
-      "@/*": ["./*"],
+      "@/*": ["./*"]
     }
   }
 }
