@@ -31,6 +31,7 @@ export class S3Client {
   public async s3_fetch(input: string, init?: RequestInit) {
     init = init || {};
     const url = new URL(input);
+    const objectKey = decodeURI(url.pathname);
     const method = init.method || "GET";
     const canonicalQueryString = [...url.searchParams]
       .map(
@@ -44,16 +45,24 @@ export class S3Client {
     headers.set("x-amz-date", datetime);
     headers.set("x-amz-content-sha256", hashedPayload);
     headers.set("host", url.host);
-    const canonicalHeaders = [...headers.keys()]
+    const signedHeaderKeys = [...headers.keys()].filter(
+      (header) =>
+        header === "host" ||
+        header === "content-type" ||
+        header.startsWith("x-amz-")
+    );
+    const canonicalHeaders = signedHeaderKeys
       .map((key) => `${key}:${headers.get(key)}\n`)
       .join("");
-    const signedHeaderKeys = [...headers.keys()].filter(
-      (header) => header === "host" || header.startsWith("x-amz-")
-    );
     const signedHeaders = signedHeaderKeys.join(";");
+    const canonicalUri = encodeURIComponent(objectKey)
+      .replaceAll("%2F", "/")
+      .replace(/[!*'()]/g, function (c) {
+        return "%" + c.charCodeAt(0).toString(16).toUpperCase();
+      });
     const canonicalRequest = [
       method,
-      encodeURIComponent(url.pathname).replaceAll("%2F", "/"),
+      canonicalUri,
       canonicalQueryString,
       canonicalHeaders,
       signedHeaders,

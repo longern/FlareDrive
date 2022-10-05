@@ -8,8 +8,10 @@ export async function onRequest(context) {
     /.*\/api\/s3\//,
     `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com/`
   );
+
   return client.s3_fetch(forwardUrl, {
     method: request.method,
     body: request.body,
+    headers: request.headers,
   });
 }
