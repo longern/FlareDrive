@@ -34,7 +34,9 @@ async function getCurrentBucket(context) {
     )
   );
 
-  return new Response(currentBucket);
+  return new Response(currentBucket, {
+    headers: { "cache-control": "max-age=604800" },
+  });
 }
 
 export async function onRequestGet(context) {
