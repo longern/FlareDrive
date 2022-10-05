@@ -494,9 +494,8 @@
               const uploadUrl = `/api/items/${this.cwd}${file.name}`;
               const headers = {};
               const onUploadProgress = (progressEvent) => {
-                var percentCompleted = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total
-                );
+                var percentCompleted =
+                  (progressEvent.loaded * 100) / progressEvent.total;
                 this.uploadProgress = percentCompleted;
               };
               if (file.size >= SIZE_LIMIT) {
