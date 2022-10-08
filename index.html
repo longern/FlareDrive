@@ -81,7 +81,8 @@
         justify-content: center;
       }
 
-      .file-name {
+      .file-name,
+      .contextmenu-filename {
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
@@ -145,6 +146,10 @@
         width: 300px;
         padding: 8px 0;
         border-radius: 8px;
+      }
+
+      .contextmenu-filename {
+        padding: 12px;
       }
 
       .contextmenu-list > li > * {
@@ -341,6 +346,11 @@
       </div>
       <div v-if="showMenu" class="contextmenu-mask" @click="showMenu = false">
         <div class="contextmenu-container">
+          <div
+            v-text="focusedItem.key || focusedItem"
+            class="contextmenu-filename"
+            @click.stop.prevent
+          ></div>
           <ul v-if="typeof(focusedItem) === 'string'" class="contextmenu-list">
             <li>
               <button
