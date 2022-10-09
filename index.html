@@ -373,7 +373,12 @@
               </button>
             </li>
             <li>
-              <button style="color: red">Remove</button>
+              <button
+                style="color: red"
+                @click="removeFile(focusedItem + '_$folder$')"
+              >
+                <span>Remove</span>
+              </button>
             </li>
           </ul>
           <ul v-else class="contextmenu-list">
