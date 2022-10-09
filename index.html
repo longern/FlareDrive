@@ -188,6 +188,7 @@
           alt="Create folder"
           width="36"
           height="36"
+          @contextmenu.prevent
         />
         <button hidden @click="createFolder"></button>
       </label>
@@ -198,15 +199,27 @@
           alt="Upload"
           width="36"
           height="36"
+          @contextmenu.prevent
         />
-        <input type="file" id="file" multiple hidden @change="uploadFile" />
+        <input
+          type="file"
+          id="file"
+          multiple
+          hidden
+          @change="onUploadClicked"
+        />
       </label>
       <div
         style="position: sticky; top: 0; padding: 8px; background-color: white"
       >
         <input type="search" v-model="search" aria-label="Search" />
       </div>
-      <ul class="file-list">
+      <ul
+        class="file-list"
+        @dragenter.prevent
+        @dragover.prevent
+        @drop.prevent="onDrop"
+      >
         <li v-if="cwd !== ''">
           <div
             tabindex="0"
@@ -480,6 +493,23 @@
             return `${size.toFixed(1)} ${units[i]}`;
           },
 
+          onDrop(ev) {
+            let files;
+            if (ev.dataTransfer.items) {
+              files = [...ev.dataTransfer.items]
+                .filter((item) => item.kind === "file")
+                .map((item) => item.getAsFile());
+            } else files = ev.dataTransfer.files;
+            this.uploadFiles(files);
+          },
+
+          onUploadClicked() {
+            const fileElement = document.getElementById("file");
+            if (!fileElement.value) return;
+            this.uploadFiles(fileElement.files);
+            fileElement.value = null;
+          },
+
           async processUploadQueue() {
             if (!this.uploadQueue.length) {
               this.fetchFiles();
@@ -547,16 +577,11 @@
             this.fetchFiles();
           },
 
-          uploadFile(e) {
-            e.preventDefault();
-            const fileElement = document.getElementById("file");
-            if (!fileElement.value) return;
-
+          uploadFiles(files) {
             if (this.cwd && !this.cwd.endsWith("/")) this.cwd += "/";
 
-            this.uploadQueue.push(...fileElement.files);
-            fileElement.value = null;
-            this.processUploadQueue();
+            this.uploadQueue.push(...files);
+            setTimeout(() => this.processUploadQueue());
           },
         },
 
