@@ -4,6 +4,8 @@ CloudFlare R2 storage manager with Pages and Workers. Free 10 GB storage. Free s
 
 ## Usage
 
+### Installation
+
 Before starting, you should make sure that
 
 - you have created a [CloudFlare](https://dash.cloudflare.com/) account
@@ -24,3 +26,12 @@ To upload a single file more than 100 MB, multipart upload is needed. Do these s
 1. Create an R2 API token with read/write permissions. Copy token ID and secret key.
 2. Copy your CloudFlare account ID in the sidebar of R2 page.
 3. Set these variables in Pages settings: `AWS_ACCESS_KEY_ID` as token ID, `AWS_SECRET_ACCESS_KEY` as secret key and `CF_ACCOUNT_ID` as your CloudFlare account ID.
+
+### Authentication
+
+There is no built-in authentication support. By default everyone can read and write your storage. But CloudFlare Zero Trust can be used to protect your data. Do these steps to enable authentication:
+
+1. Enable CloudFlare Zero Trust
+2. In **Access**->**Applications**, create a self-hosted application
+3. Set **Path** as `api/write/` to disable public write or leave it blank to disable public read
+4. Create a policy which accepts your email only
