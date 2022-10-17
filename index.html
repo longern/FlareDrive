@@ -298,11 +298,11 @@
             try {
               const folderName = window.prompt("Folder name");
               if (!folderName) return;
-              const uploadUrl = `/api/items/${this.cwd}${folderName}/_$folder$`;
+              const uploadUrl = `/api/write/items/${this.cwd}${folderName}/_$folder$`;
               await axios.put(uploadUrl, "");
               this.fetchFiles();
             } catch (error) {
-              fetch("/api/items/")
+              fetch("/api/write/")
                 .then((value) => {
                   if (value.redirected) window.location.href = value.url;
                 })
@@ -366,7 +366,7 @@
               const thumbnailBlob = await generateThumbnail(file);
               const digestHex = await blobDigest(thumbnailBlob);
 
-              const thumbnailUploadUrl = `/api/items/_$flaredrive$/thumbnails/${digestHex}.png`;
+              const thumbnailUploadUrl = `/api/write/items/_$flaredrive$/thumbnails/${digestHex}.png`;
               try {
                 await axios.put(thumbnailUploadUrl, thumbnailBlob);
                 thumbnailDigest = digestHex;
@@ -376,7 +376,7 @@
             }
 
             try {
-              const uploadUrl = `/api/items/${this.cwd}${file.name}`;
+              const uploadUrl = `/api/write/items/${this.cwd}${file.name}`;
               const headers = {};
               const onUploadProgress = (progressEvent) => {
                 var percentCompleted =
@@ -392,7 +392,7 @@
                 await axios.put(uploadUrl, file, { headers, onUploadProgress });
               }
             } catch (error) {
-              fetch("/api/items/")
+              fetch("/api/write/")
                 .then((value) => {
                   if (value.redirected) window.location.href = value.url;
                 })
@@ -403,18 +403,18 @@
           },
 
           async removeFile(key) {
-            await axios.delete(`/api/items/${key}`);
+            await axios.delete(`/api/write/items/${key}`);
             this.fetchFiles();
           },
 
           async renameFile(key) {
             const newName = window.prompt("Rename to:");
             if (!newName) return;
-            const uploadUrl = `/api/items/${this.cwd}${newName}`;
+            const uploadUrl = `/api/write/items/${this.cwd}${newName}`;
             await axios.put(uploadUrl, "", {
               headers: { "x-amz-copy-source": encodeURIComponent(key) },
             });
-            await axios.delete(`/api/items/${key}`);
+            await axios.delete(`/api/write/items/${key}`);
             this.fetchFiles();
           },
 

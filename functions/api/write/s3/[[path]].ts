@@ -5,7 +5,7 @@ export async function onRequest(context) {
 
   const client = new S3Client(env.AWS_ACCESS_KEY_ID, env.AWS_SECRET_ACCESS_KEY);
   const forwardUrl = request.url.replace(
-    /.*\/api\/s3\//,
+    /.*\/api\/write\/s3\//,
     `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com/`
   );
 

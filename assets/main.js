@@ -48,7 +48,7 @@ export async function multipartUpload(key, file, options) {
     bucketName = await fetch("/api/buckets?current").then((res) => res.text());
 
   const uploadId = await axios
-    .post(`/api/s3/${bucketName}/${key}?uploads`, "", {
+    .post(`/api/write/s3/${bucketName}/${key}?uploads`, "", {
       headers: { "content-type": file.type },
     })
     .then((res) =>
@@ -61,7 +61,7 @@ export async function multipartUpload(key, file, options) {
     const searchParams = new URLSearchParams({ partNumber: i + 1, uploadId });
     /** @type Response */
     const partResponse = await axios.put(
-      `/api/s3/${bucketName}/${key}?${searchParams}`,
+      `/api/write/s3/${bucketName}/${key}?${searchParams}`,
       chunk,
       {
         onUploadProgress(progressEvent) {
@@ -86,7 +86,7 @@ export async function multipartUpload(key, file, options) {
     .join("\n");
   const completeParams = new URLSearchParams({ uploadId });
   await axios.post(
-    `/api/s3/${bucketName}/${key}?${completeParams}`,
+    `/api/write/s3/${bucketName}/${key}?${completeParams}`,
     `<CompleteMultipartUpload>
 ${partsXML}
 </CompleteMultipartUpload>`
