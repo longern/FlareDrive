@@ -372,6 +372,11 @@
                 await axios.put(thumbnailUploadUrl, thumbnailBlob);
                 thumbnailDigest = digestHex;
               } catch (error) {
+                fetch("/api/write/")
+                  .then((value) => {
+                    if (value.redirected) window.location.href = value.url;
+                  })
+                  .catch(() => {});
                 console.log(`Upload ${digestHex}.png failed`);
               }
             }
