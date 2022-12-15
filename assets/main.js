@@ -35,7 +35,6 @@ export async function blobDigest(blob) {
   return digestHex;
 }
 
-let bucketName = "";
 export const SIZE_LIMIT = 100 * 1000 * 1000;
 
 /**
@@ -44,16 +43,11 @@ export const SIZE_LIMIT = 100 * 1000 * 1000;
  * @param {Record<string, any>} options
  */
 export async function multipartUpload(key, file, options) {
-  if (!bucketName)
-    bucketName = await fetch("/api/buckets?current").then((res) => res.text());
-
   const uploadId = await axios
-    .post(`/api/write/s3/${bucketName}/${key}?uploads`, "", {
+    .post(`/api/write/items/${key}?uploads`, "", {
       headers: { "content-type": file.type },
     })
-    .then((res) =>
-      res.data.replace(/[\S\s]*<UploadId>(.*)<\/UploadId>[\S\s]*/, "$1")
-    );
+    .then((res) => res.data.uploadId);
   const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
   const etags = new Array(totalChunks);
   for (let i = 0; i < totalChunks; i++) {
@@ -61,7 +55,7 @@ export async function multipartUpload(key, file, options) {
     const searchParams = new URLSearchParams({ partNumber: i + 1, uploadId });
     /** @type Response */
     const partResponse = await axios.put(
-      `/api/write/s3/${bucketName}/${key}?${searchParams}`,
+      `/api/write/items/${key}?${searchParams}`,
       chunk,
       {
         onUploadProgress(progressEvent) {
@@ -75,20 +69,12 @@ export async function multipartUpload(key, file, options) {
     );
     etags[i] = partResponse.headers.etag;
   }
-  const partsXML = etags
-    .map(
-      (etag, index) =>
-        `  <Part>
-    <ETag>${etag}</ETag>
-    <PartNumber>${index + 1}</PartNumber>
-  </Part>`
-    )
-    .join("\n");
+  const uploadedParts = etags.map((etag, index) => ({
+    etag,
+    partNumber: index + 1,
+  }));
   const completeParams = new URLSearchParams({ uploadId });
-  await axios.post(
-    `/api/write/s3/${bucketName}/${key}?${completeParams}`,
-    `<CompleteMultipartUpload>
-${partsXML}
-</CompleteMultipartUpload>`
-  );
+  await axios.post(`/api/write/items/${key}?${completeParams}`, {
+    parts: uploadedParts,
+  });
 }
