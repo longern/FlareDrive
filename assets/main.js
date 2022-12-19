@@ -21,10 +21,13 @@ export async function generateThumbnail(file) {
     // Generate thumbnail from video
     const video = await new Promise(async (resolve, reject) => {
       const video = document.createElement("video");
-      video.preload = "auto";
+      video.muted = true;
       video.src = URL.createObjectURL(file);
-      video.onloadeddata = () => resolve(video);
       setTimeout(() => reject(new Error("Video load timeout")), 2000);
+      await video.play();
+      await video.pause();
+      video.currentTime = 0;
+      resolve(video);
     });
     ctx.drawImage(video, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
   }
