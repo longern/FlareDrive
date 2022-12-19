@@ -363,21 +363,25 @@
             const file = this.uploadQueue.pop(0);
             let thumbnailDigest = null;
 
-            if (file.type.startsWith("image/")) {
-              const thumbnailBlob = await generateThumbnail(file);
-              const digestHex = await blobDigest(thumbnailBlob);
-
-              const thumbnailUploadUrl = `/api/write/items/_$flaredrive$/thumbnails/${digestHex}.png`;
+            if (file.type.startsWith("image/") || file.type === "video/mp4") {
               try {
-                await axios.put(thumbnailUploadUrl, thumbnailBlob);
-                thumbnailDigest = digestHex;
+                const thumbnailBlob = await generateThumbnail(file);
+                const digestHex = await blobDigest(thumbnailBlob);
+
+                const thumbnailUploadUrl = `/api/write/items/_$flaredrive$/thumbnails/${digestHex}.png`;
+                try {
+                  await axios.put(thumbnailUploadUrl, thumbnailBlob);
+                  thumbnailDigest = digestHex;
+                } catch (error) {
+                  fetch("/api/write/")
+                    .then((value) => {
+                      if (value.redirected) window.location.href = value.url;
+                    })
+                    .catch(() => {});
+                  console.log(`Upload ${digestHex}.png failed`);
+                }
               } catch (error) {
-                fetch("/api/write/")
-                  .then((value) => {
-                    if (value.redirected) window.location.href = value.url;
-                  })
-                  .catch(() => {});
-                console.log(`Upload ${digestHex}.png failed`);
+                console.log(`Generate thumbnail failed`);
               }
             }
 

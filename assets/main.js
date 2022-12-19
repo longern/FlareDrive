@@ -1,19 +1,33 @@
+const THUMBNAIL_SIZE = 144;
+
 /**
  * @param {File} file
  */
 export async function generateThumbnail(file) {
-  /** @type HTMLImageElement */
-  const image = await new Promise((resolve) => {
-    var image = new Image();
-    image.onload = () => resolve(image);
-    image.src = URL.createObjectURL(file);
-  });
-
   const canvas = document.createElement("canvas");
-  canvas.width = 144;
-  canvas.height = 144;
+  canvas.width = THUMBNAIL_SIZE;
+  canvas.height = THUMBNAIL_SIZE;
   var ctx = canvas.getContext("2d");
-  ctx.drawImage(image, 0, 0, 144, 144);
+
+  /** @type HTMLImageElement */
+  if (file.type.startsWith("image/")) {
+    const image = await new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.src = URL.createObjectURL(file);
+    });
+    ctx.drawImage(image, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+  } else if (file.type === "video/mp4") {
+    // Generate thumbnail from video
+    const video = await new Promise(async (resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "auto";
+      video.src = URL.createObjectURL(file);
+      video.onloadeddata = () => resolve(video);
+      setTimeout(() => reject(new Error("Video load timeout")), 2000);
+    });
+    ctx.drawImage(video, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+  }
 
   /** @type Blob */
   const thumbnailBlob = await new Promise((resolve) =>
@@ -35,7 +49,7 @@ export async function blobDigest(blob) {
   return digestHex;
 }
 
-export const SIZE_LIMIT = 100 * 1000 * 1000;
+export const SIZE_LIMIT = 100 * 1000 * 1000; // 100MB
 
 /**
  * @param {string} key
