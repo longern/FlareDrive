@@ -60,10 +60,11 @@ export const SIZE_LIMIT = 100 * 1000 * 1000; // 100MB
  * @param {Record<string, any>} options
  */
 export async function multipartUpload(key, file, options) {
+  const headers = options?.headers || {};
+  headers["content-type"] = file.type;
+
   const uploadId = await axios
-    .post(`/api/write/items/${key}?uploads`, "", {
-      headers: { "content-type": file.type },
-    })
+    .post(`/api/write/items/${key}?uploads`, "", { headers })
     .then((res) => res.data.uploadId);
   const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
   const etags = new Array(totalChunks);

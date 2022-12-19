@@ -25,6 +25,9 @@ export async function onRequestPostCreateMultipart(context) {
     customMetadata.thumbnail = request.headers.get("fd-thumbnail");
 
   const multipartUpload = await bucket.createMultipartUpload(path, {
+    httpMetadata: {
+      contentType: request.headers.get("content-type"),
+    },
     customMetadata,
   });
 

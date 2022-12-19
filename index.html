@@ -393,12 +393,13 @@
                   (progressEvent.loaded * 100) / progressEvent.total;
                 this.uploadProgress = percentCompleted;
               };
+              if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
               if (file.size >= SIZE_LIMIT) {
                 await multipartUpload(`${this.cwd}${file.name}`, file, {
+                  headers,
                   onUploadProgress,
                 });
               } else {
-                if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
                 await axios.put(uploadUrl, file, { headers, onUploadProgress });
               }
             } catch (error) {
