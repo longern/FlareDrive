@@ -2,6 +2,13 @@
 
 CloudFlare R2 storage manager with Pages and Workers. Free 10 GB storage. Free serverless backend with a limit of 100,000 invocation requests per day. [More about pricing](https://developers.cloudflare.com/r2/platform/pricing/)
 
+## Features
+
+* Upload large files
+* Create folders
+* Search files
+* Image thumbnails
+
 ## Usage
 
 ### Installation
