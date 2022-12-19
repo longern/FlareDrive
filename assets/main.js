@@ -67,30 +67,33 @@ export async function multipartUpload(key, file, options) {
     .post(`/api/write/items/${key}?uploads`, "", { headers })
     .then((res) => res.data.uploadId);
   const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
-  const etags = new Array(totalChunks);
-  for (let i = 0; i < totalChunks; i++) {
-    const chunk = file.slice(i * SIZE_LIMIT, (i + 1) * SIZE_LIMIT);
-    const searchParams = new URLSearchParams({ partNumber: i + 1, uploadId });
-    /** @type Response */
-    const partResponse = await axios.put(
-      `/api/write/items/${key}?${searchParams}`,
-      chunk,
-      {
-        onUploadProgress(progressEvent) {
-          if (typeof options?.onUploadProgress !== "function") return;
-          options.onUploadProgress({
-            loaded: i * SIZE_LIMIT + progressEvent.loaded,
-            total: file.size,
-          });
-        },
-      }
-    );
-    etags[i] = partResponse.headers.etag;
+
+  const promiseGenerator = function* () {
+    for (let i = 1; i <= totalChunks; i++) {
+      const chunk = file.slice((i - 1) * SIZE_LIMIT, i * SIZE_LIMIT);
+      const searchParams = new URLSearchParams({ partNumber: i, uploadId });
+      yield axios
+        .put(`/api/write/items/${key}?${searchParams}`, chunk, {
+          onUploadProgress(progressEvent) {
+            if (typeof options?.onUploadProgress !== "function") return;
+            options.onUploadProgress({
+              loaded: (i - 1) * SIZE_LIMIT + progressEvent.loaded,
+              total: file.size,
+            });
+          },
+        })
+        .then((res) => ({
+          partNumber: i,
+          etag: res.headers.etag,
+        }));
+    }
+  };
+
+  const uploadedParts = [];
+  for (const part of promiseGenerator()) {
+    const { partNumber, etag } = await part;
+    uploadedParts[partNumber - 1] = { partNumber, etag };
   }
-  const uploadedParts = etags.map((etag, index) => ({
-    etag,
-    partNumber: index + 1,
-  }));
   const completeParams = new URLSearchParams({ uploadId });
   await axios.post(`/api/write/items/${key}?${completeParams}`, {
     parts: uploadedParts,
