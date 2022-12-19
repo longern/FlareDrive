@@ -2,20 +2,29 @@ function notFound() {
   return new Response("Not found", { status: 404 });
 }
 
-export async function onRequestPostCreateMultipart(context) {
+function parseBucketPath(context): [any, string] {
   const { request, env, params } = context;
   const url = new URL(request.url);
 
-  const path = decodeURIComponent((params.path || []).join("/"));
+  const pathSegments = (params.path || []) as String[];
+  const path = decodeURIComponent(pathSegments.join("/"));
   const driveid = url.hostname.replace(/\..*/, "");
 
-  if (!env[driveid]) return notFound();
+  if (!env[driveid]) return [null, null];
+  return [env[driveid], path];
+}
+
+export async function onRequestPostCreateMultipart(context) {
+  const [bucket, path] = parseBucketPath(context);
+  if (!bucket) return notFound();
+
+  const request: Request = context.request;
 
   const customMetadata: Record<string, string> = {};
   if (request.headers.has("fd-thumbnail"))
     customMetadata.thumbnail = request.headers.get("fd-thumbnail");
 
-  const multipartUpload = await env[driveid].createMultipartUpload(path, {
+  const multipartUpload = await bucket.createMultipartUpload(path, {
     customMetadata,
   });
 
@@ -28,21 +37,15 @@ export async function onRequestPostCreateMultipart(context) {
 }
 
 export async function onRequestPostCompleteMultipart(context) {
-  const { request, env, params } = context;
+  const [bucket, path] = parseBucketPath(context);
+  if (!bucket) return notFound();
+
+  const request: Request = context.request;
   const url = new URL(request.url);
-
-  const path = decodeURIComponent((params.path || []).join("/"));
-  const driveid = url.hostname.replace(/\..*/, "");
-
-  if (!env[driveid]) return notFound();
-
   const uploadId = new URLSearchParams(url.search).get("uploadId");
-  const multipartUpload = await env[driveid].resumeMultipartUpload(
-    path,
-    uploadId
-  );
+  const multipartUpload = await bucket.resumeMultipartUpload(path, uploadId);
 
-  const completeBody = await request.json();
+  const completeBody: { parts: Array<any> } = await request.json();
 
   try {
     const object = await multipartUpload.complete(completeBody.parts);
@@ -70,19 +73,14 @@ export async function onRequestPost(context) {
 }
 
 export async function onRequestPutMultipart(context) {
-  const { request, env, params } = context;
+  const [bucket, path] = parseBucketPath(context);
+  if (!bucket) return notFound();
+
+  const request: Request = context.request;
   const url = new URL(request.url);
 
-  const path = decodeURIComponent((params.path || []).join("/"));
-  const driveid = url.hostname.replace(/\..*/, "");
-
-  if (!env[driveid]) return notFound();
-
   const uploadId = new URLSearchParams(url.search).get("uploadId");
-  const multipartUpload = await env[driveid].resumeMultipartUpload(
-    path,
-    uploadId
-  );
+  const multipartUpload = await bucket.resumeMultipartUpload(path, uploadId);
 
   const partNumber = parseInt(
     new URLSearchParams(url.search).get("partNumber")
@@ -101,17 +99,16 @@ export async function onRequestPutMultipart(context) {
 }
 
 export async function onRequestPut(context) {
-  const { request, env, params } = context;
-  const url = new URL(request.url);
+  const url = new URL(context.request.url);
 
   if (new URLSearchParams(url.search).has("uploadId")) {
     return onRequestPutMultipart(context);
   }
 
-  const path = decodeURIComponent((params.path || []).join("/"));
-  const driveid = url.hostname.replace(/\..*/, "");
+  const [bucket, path] = parseBucketPath(context);
+  if (!bucket) return notFound();
 
-  if (!env[driveid]) return notFound();
+  const request: Request = context.request;
 
   let content = request.body;
   const customMetadata: Record<string, string> = {};
@@ -120,7 +117,7 @@ export async function onRequestPut(context) {
     const sourceName = decodeURIComponent(
       request.headers.get("x-amz-copy-source")
     );
-    const source = await env[driveid].get(sourceName);
+    const source = await bucket.get(sourceName);
     content = source.body;
     if (source.customMetadata.thumbnail)
       customMetadata.thumbnail = source.customMetadata.thumbnail;
@@ -129,7 +126,7 @@ export async function onRequestPut(context) {
   if (request.headers.has("fd-thumbnail"))
     customMetadata.thumbnail = request.headers.get("fd-thumbnail");
 
-  const obj = await env[driveid].put(path, content, { customMetadata });
+  const obj = await bucket.put(path, content, { customMetadata });
   const { key, size, uploaded } = obj;
   return new Response(JSON.stringify({ key, size, uploaded }), {
     headers: { "Content-Type": "application/json" },
@@ -137,12 +134,9 @@ export async function onRequestPut(context) {
 }
 
 export async function onRequestDelete(context) {
-  const { request, env, params } = context;
-  const path = decodeURIComponent((params.path || []).join("/"));
-  const driveid = new URL(request.url).hostname.replace(/\..*/, "");
+  const [bucket, path] = parseBucketPath(context);
+  if (!bucket) return notFound();
 
-  if (!env[driveid]) return notFound();
-
-  await env[driveid].delete(path);
+  await bucket.delete(path);
   return new Response(null, { status: 204 });
 }

@@ -16,7 +16,7 @@
   },
   "homepage": "https://github.com/longern/FlareDrive#readme",
   "devDependencies": {
-    "@cloudflare/workers-types": "^3.18.0",
+    "@cloudflare/workers-types": "^3.3.1",
     "@types/node": "^18.7.19",
     "dotenv": "^16.0.2"
   }
