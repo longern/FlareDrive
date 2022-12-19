@@ -1,18 +1,4 @@
-function notFound() {
-  return new Response("Not found", { status: 404 });
-}
-
-function parseBucketPath(context): [any, string] {
-  const { request, env, params } = context;
-  const url = new URL(request.url);
-
-  const pathSegments = (params.path || []) as String[];
-  const path = decodeURIComponent(pathSegments.join("/"));
-  const driveid = url.hostname.replace(/\..*/, "");
-
-  if (!env[driveid]) return [null, null];
-  return [env[driveid], path];
-}
+import { notFound, parseBucketPath } from "@/utils/bucket";
 
 export async function onRequestPostCreateMultipart(context) {
   const [bucket, path] = parseBucketPath(context);

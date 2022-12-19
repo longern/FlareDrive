@@ -1,12 +1,11 @@
+import { notFound, parseBucketPath } from "@/utils/bucket";
+
 export async function onRequestGet(context) {
   try {
-    const { request, env, params } = context;
-    const path = (params.path || [])
-      .map((dir) => decodeURIComponent(dir) + "/")
-      .join("");
-    const driveid = new URL(request.url).hostname.replace(/\..*/, "");
+    const [bucket, path] = parseBucketPath(context);
+    if (!bucket) return notFound();
 
-    const objList = await env[driveid].list({
+    const objList = await bucket.list({
       prefix: path,
       delimiter: "/",
       include: ["httpMetadata", "customMetadata"],
