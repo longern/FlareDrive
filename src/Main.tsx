@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import FileList, { FileItem } from "./FileList";
 import {
   Box,
@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Home as HomeIcon } from "@mui/icons-material";
+import UploadFab from "./UploadFab";
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -26,16 +27,16 @@ function Centered({ children }: { children: React.ReactNode }) {
 
 function PathBreadcrumb({
   path,
-  onChangeCwd,
+  onCwdChange,
 }: {
   path: string;
-  onChangeCwd: (newCwd: string) => void;
+  onCwdChange: (newCwd: string) => void;
 }) {
   const parts = path.replace(/\/$/, "").split("/");
 
   return (
     <Breadcrumbs separator="›" sx={{ padding: 1 }}>
-      <Link onClick={() => onChangeCwd("")}>
+      <Link onClick={() => onCwdChange("")}>
         <HomeIcon />
       </Link>
       {parts.map((part, index) =>
@@ -47,7 +48,7 @@ function PathBreadcrumb({
           <Link
             key={index}
             onClick={() => {
-              onChangeCwd(parts.slice(0, index + 1).join("/") + "/");
+              onCwdChange(parts.slice(0, index + 1).join("/") + "/");
             }}
           >
             {part}
@@ -65,10 +66,10 @@ function Main({
   search: string;
   onError: (error: Error) => void;
 }) {
+  const [cwd, setCwd] = React.useState("");
   const [folders, setFolders] = useState<string[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [cwd, setCwd] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -107,19 +108,24 @@ function Main({
     [files, search]
   );
 
-  return loading ? (
-    <Centered>
-      <CircularProgress />
-    </Centered>
-  ) : (
-    <div>
-      {cwd && <PathBreadcrumb path={cwd} onChangeCwd={setCwd} />}
-      <FileList
-        folders={filteredFolders}
-        files={filteredFiles}
-        onChangeCwd={(newCwd: string) => setCwd(newCwd)}
-      />
-    </div>
+  return (
+    <React.Fragment>
+      {loading ? (
+        <Centered>
+          <CircularProgress />
+        </Centered>
+      ) : (
+        <div>
+          {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
+          <FileList
+            folders={filteredFolders}
+            files={filteredFiles}
+            onCwdChange={(newCwd: string) => setCwd(newCwd)}
+          />
+        </div>
+      )}
+      <UploadFab cwd={cwd} />
+    </React.Fragment>
   );
 }
 

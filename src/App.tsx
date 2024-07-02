@@ -9,7 +9,6 @@ import React from "react";
 
 import Header from "./Header";
 import Main from "./Main";
-import UploadFab from "./UploadFab";
 
 const globalStyles = (
   <GlobalStyles styles={{ "html, body, #root": { height: "100%" } }} />
@@ -32,7 +31,6 @@ function App() {
         onSearchChange={(newSearch: string) => setSearch(newSearch)}
       />
       <Main search={search} onError={setError} />
-      <UploadFab />
       <Snackbar
         autoHideDuration={5000}
         open={Boolean(error)}

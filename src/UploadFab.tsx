@@ -5,13 +5,16 @@ import {
   CreateNewFolder as CreateNewFolderIcon,
   Upload as UploadIcon,
 } from "@mui/icons-material";
+import { createFolder } from "./app/fs";
 
 function IconCaptionButton({
   icon,
   caption,
+  onClick,
 }: {
   icon: React.ReactNode;
   caption: string;
+  onClick?: () => void;
 }) {
   return (
     <Button
@@ -21,6 +24,7 @@ function IconCaptionButton({
         display: "flex",
         flexDirection: "column",
       }}
+      onClick={onClick}
     >
       {icon}
       <Typography
@@ -33,7 +37,7 @@ function IconCaptionButton({
   );
 }
 
-function UploadFab() {
+function UploadFab({ cwd }: { cwd: string }) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -72,6 +76,7 @@ function UploadFab() {
               <IconCaptionButton
                 icon={<CreateNewFolderIcon fontSize="large" />}
                 caption="Create Folder"
+                onClick={() => createFolder(cwd)}
               />
             </Grid>
           </Grid>

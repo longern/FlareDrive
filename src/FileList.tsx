@@ -38,19 +38,19 @@ function extractFilename(key: string) {
 function FileList({
   folders,
   files,
-  onChangeCwd,
+  onCwdChange,
 }: {
   folders: string[];
   files: FileItem[];
-  onChangeCwd: (newCwd: string) => void;
+  onCwdChange: (newCwd: string) => void;
 }) {
   return (
     <List disablePadding>
       {folders.map((folder) => (
         <ListItem key={folder} disablePadding>
           <ListItemButton
-            onClick={() => onChangeCwd(folder)}
-            sx={{ minHeight: 72 }}
+            onClick={() => onCwdChange(folder)}
+            sx={{ minHeight: 64 }}
           >
             <ListItemIcon>
               <InsertDriveFileOutlinedIcon fontSize="large" />
@@ -72,7 +72,7 @@ function FileList({
                 <img
                   src={`/raw/_$flaredrive$/thumbnails/${file.customMetadata.thumbnail}.png`}
                   alt={file.key}
-                  style={{ width: 40, height: 40, objectFit: "cover" }}
+                  style={{ width: 36, height: 36, objectFit: "cover" }}
                 />
               ) : (
                 <MimeIcon contentType={file.httpMetadata.contentType} />
