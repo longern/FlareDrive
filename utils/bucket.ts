@@ -2,7 +2,7 @@ export function notFound() {
   return new Response("Not found", { status: 404 });
 }
 
-export function parseBucketPath(context): [any, string] {
+export function parseBucketPath(context): [R2Bucket, string] {
   const { request, env, params } = context;
   const url = new URL(request.url);
 

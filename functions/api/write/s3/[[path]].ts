@@ -1,6 +1,9 @@
 import { S3Client } from "@/utils/s3";
 
-export async function onRequest(context) {
+export const onRequest: PagesFunction<{
+  AWS_ACCESS_KEY_ID: string;
+  AWS_SECRET_ACCESS_KEY: string;
+}> = async function (context) {
   const { request, env } = context;
 
   const client = new S3Client(env.AWS_ACCESS_KEY_ID, env.AWS_SECRET_ACCESS_KEY);
@@ -14,4 +17,4 @@ export async function onRequest(context) {
     body: request.body,
     headers: request.headers,
   });
-}
+};

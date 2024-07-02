@@ -1,6 +1,6 @@
 import { notFound, parseBucketPath } from "@/utils/bucket";
 
-export async function onRequestGet(context) {
+export const onRequestGet: PagesFunction = async function (context) {
   try {
     const [bucket, path] = parseBucketPath(context);
     const prefix = path && `${path}/`;
@@ -9,6 +9,7 @@ export async function onRequestGet(context) {
     const objList = await bucket.list({
       prefix,
       delimiter: "/",
+      // @ts-ignore
       include: ["httpMetadata", "customMetadata"],
     });
     const objKeys = objList.objects
@@ -25,7 +26,7 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({ value: objKeys, folders }), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     return new Response(e.toString(), { status: 500 });
   }
-}
+};

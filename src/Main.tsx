@@ -3,6 +3,7 @@ import FileList, { FileItem } from "./FileList";
 import {
   Box,
   Breadcrumbs,
+  Button,
   CircularProgress,
   Link,
   Typography,
@@ -36,9 +37,15 @@ function PathBreadcrumb({
 
   return (
     <Breadcrumbs separator="›" sx={{ padding: 1 }}>
-      <Link onClick={() => onCwdChange("")}>
+      <Button
+        onClick={() => onCwdChange("")}
+        sx={{
+          minWidth: 0,
+          padding: 0,
+        }}
+      >
         <HomeIcon />
-      </Link>
+      </Button>
       {parts.map((part, index) =>
         index === parts.length - 1 ? (
           <Typography key={index} color="text.primary">
@@ -110,19 +117,17 @@ function Main({
 
   return (
     <React.Fragment>
+      {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
       {loading ? (
         <Centered>
           <CircularProgress />
         </Centered>
       ) : (
-        <div>
-          {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
-          <FileList
-            folders={filteredFolders}
-            files={filteredFiles}
-            onCwdChange={(newCwd: string) => setCwd(newCwd)}
-          />
-        </div>
+        <FileList
+          folders={filteredFolders}
+          files={filteredFiles}
+          onCwdChange={(newCwd: string) => setCwd(newCwd)}
+        />
       )}
       <UploadFab cwd={cwd} />
     </React.Fragment>

@@ -6,7 +6,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import FolderIcon from "@mui/icons-material/Folder";
 import MimeIcon from "./MimeIcon";
 
 export interface FileItem {
@@ -53,9 +53,9 @@ function FileList({
             sx={{ minHeight: 64 }}
           >
             <ListItemIcon>
-              <InsertDriveFileOutlinedIcon fontSize="large" />
+              <FolderIcon fontSize="large" />
             </ListItemIcon>
-            <ListItemText primary={folder} />
+            <ListItemText primary={folder.replace(/\/$/, "")} />
           </ListItemButton>
         </ListItem>
       ))}

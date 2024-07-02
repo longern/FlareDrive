@@ -47,5 +47,9 @@
     "react-scripts": {
       "typescript": "^5"
     }
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@cloudflare/workers-types": "^4.20240620.0"
   }
 }

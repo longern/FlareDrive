@@ -56,7 +56,7 @@ export class S3Client {
       .join("");
     const signedHeaders = signedHeaderKeys.join(";");
     const canonicalUri = encodeURIComponent(objectKey)
-      .replaceAll("%2F", "/")
+      .replace(/%2F/g, "/")
       .replace(/[!*'()]/g, function (c) {
         return "%" + c.charCodeAt(0).toString(16).toUpperCase();
       });

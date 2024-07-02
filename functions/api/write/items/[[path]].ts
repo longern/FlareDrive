@@ -8,11 +8,11 @@ export async function onRequestPostCreateMultipart(context) {
 
   const customMetadata: Record<string, string> = {};
   if (request.headers.has("fd-thumbnail"))
-    customMetadata.thumbnail = request.headers.get("fd-thumbnail");
+    customMetadata.thumbnail = request.headers.get("fd-thumbnail")!;
 
   const multipartUpload = await bucket.createMultipartUpload(path, {
     httpMetadata: {
-      contentType: request.headers.get("content-type"),
+      contentType: request.headers.get("content-type") ?? undefined,
     },
     customMetadata,
   });
@@ -32,7 +32,7 @@ export async function onRequestPostCompleteMultipart(context) {
   const request: Request = context.request;
   const url = new URL(request.url);
   const uploadId = new URLSearchParams(url.search).get("uploadId");
-  const multipartUpload = await bucket.resumeMultipartUpload(path, uploadId);
+  const multipartUpload = bucket.resumeMultipartUpload(path, uploadId);
 
   const completeBody: { parts: Array<any> } = await request.json();
 
@@ -46,7 +46,7 @@ export async function onRequestPostCompleteMultipart(context) {
   }
 }
 
-export async function onRequestPost(context) {
+export const onRequestPost: PagesFunction = async function (context) {
   const url = new URL(context.request.url);
   const searchParams = new URLSearchParams(url.search);
 
@@ -59,7 +59,7 @@ export async function onRequestPost(context) {
   }
 
   return new Response("Method not allowed", { status: 405 });
-}
+};
 
 export async function onRequestPutMultipart(context) {
   const [bucket, path] = parseBucketPath(context);
@@ -69,14 +69,17 @@ export async function onRequestPutMultipart(context) {
   const url = new URL(request.url);
 
   const uploadId = new URLSearchParams(url.search).get("uploadId");
-  const multipartUpload = await bucket.resumeMultipartUpload(path, uploadId);
+  const multipartUpload = bucket.resumeMultipartUpload(path, uploadId);
 
-  const partNumber = parseInt(
-    new URLSearchParams(url.search).get("partNumber")
-  );
+  const partNumberStr = new URLSearchParams(url.search).get("partNumber");
+  if (partNumberStr === null)
+    return new Response("Invalid part number", {
+      status: 400,
+    });
+  const partNumber = parseInt(partNumberStr);
   const uploadedPart = await multipartUpload.uploadPart(
     partNumber,
-    request.body
+    request.body as ReadableStream<Uint8Array>
   );
 
   return new Response(null, {
@@ -87,7 +90,7 @@ export async function onRequestPutMultipart(context) {
   });
 }
 
-export async function onRequestPut(context) {
+export const onRequestPut: PagesFunction = async function (context) {
   const url = new URL(context.request.url);
 
   if (new URLSearchParams(url.search).has("uploadId")) {
@@ -104,28 +107,29 @@ export async function onRequestPut(context) {
 
   if (request.headers.has("x-amz-copy-source")) {
     const sourceName = decodeURIComponent(
-      request.headers.get("x-amz-copy-source")
+      request.headers.get("x-amz-copy-source")!
     );
     const source = await bucket.get(sourceName);
+    if (!source) return notFound();
     content = source.body;
-    if (source.customMetadata.thumbnail)
+    if (source.customMetadata?.thumbnail)
       customMetadata.thumbnail = source.customMetadata.thumbnail;
   }
 
   if (request.headers.has("fd-thumbnail"))
-    customMetadata.thumbnail = request.headers.get("fd-thumbnail");
+    customMetadata.thumbnail = request.headers.get("fd-thumbnail")!;
 
   const obj = await bucket.put(path, content, { customMetadata });
   const { key, size, uploaded } = obj;
   return new Response(JSON.stringify({ key, size, uploaded }), {
     headers: { "Content-Type": "application/json" },
   });
-}
+};
 
-export async function onRequestDelete(context) {
+export const onRequestDelete: PagesFunction = async function (context) {
   const [bucket, path] = parseBucketPath(context);
   if (!bucket) return notFound();
 
   await bucket.delete(path);
   return new Response(null, { status: 204 });
-}
+};
