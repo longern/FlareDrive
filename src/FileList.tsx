@@ -7,6 +7,7 @@ import {
   ListItemText,
 } from "@mui/material";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
+import MimeIcon from "./MimeIcon";
 
 export interface FileItem {
   key: string;
@@ -44,12 +45,15 @@ function FileList({
   onChangeCwd: (newCwd: string) => void;
 }) {
   return (
-    <List>
+    <List disablePadding>
       {folders.map((folder) => (
         <ListItem key={folder} disablePadding>
-          <ListItemButton onClick={() => onChangeCwd(folder)}>
+          <ListItemButton
+            onClick={() => onChangeCwd(folder)}
+            sx={{ minHeight: 72 }}
+          >
             <ListItemIcon>
-              <InsertDriveFileOutlinedIcon />
+              <InsertDriveFileOutlinedIcon fontSize="large" />
             </ListItemIcon>
             <ListItemText primary={folder} />
           </ListItemButton>
@@ -57,12 +61,33 @@ function FileList({
       ))}
       {files.map((file) => (
         <ListItem key={file.key} disablePadding>
-          <ListItemButton>
+          <ListItemButton
+            component="a"
+            href={`/raw/${file.key}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ListItemIcon>
+              {file.customMetadata?.thumbnail ? (
+                <img
+                  src={`/raw/_$flaredrive$/thumbnails/${file.customMetadata.thumbnail}.png`}
+                  alt={file.key}
+                  style={{ width: 40, height: 40, objectFit: "cover" }}
+                />
+              ) : (
+                <MimeIcon contentType={file.httpMetadata.contentType} />
+              )}
+            </ListItemIcon>
             <ListItemText
               primary={extractFilename(file.key)}
+              primaryTypographyProps={{
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
               secondary={`${new Date(
                 file.uploaded
-              ).toLocaleDateString()} • ${humanReadableSize(file.size)}`}
+              ).toLocaleString()} • ${humanReadableSize(file.size)}`}
             />
           </ListItemButton>
         </ListItem>

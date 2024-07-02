@@ -1,5 +1,10 @@
 import { ThemeProvider } from "@emotion/react";
-import { createTheme, CssBaseline, GlobalStyles } from "@mui/material";
+import {
+  createTheme,
+  CssBaseline,
+  GlobalStyles,
+  Snackbar,
+} from "@mui/material";
 import React from "react";
 
 import Header from "./Header";
@@ -16,6 +21,7 @@ const theme = createTheme({
 
 function App() {
   const [search, setSearch] = React.useState("");
+  const [error, setError] = React.useState<Error | null>(null);
 
   return (
     <ThemeProvider theme={theme}>
@@ -25,8 +31,14 @@ function App() {
         search={search}
         onSearchChange={(newSearch: string) => setSearch(newSearch)}
       />
-      <Main search={search} />
+      <Main search={search} onError={setError} />
       <UploadFab />
+      <Snackbar
+        autoHideDuration={5000}
+        open={Boolean(error)}
+        message={error?.message}
+        onClose={() => setError(null)}
+      />
     </ThemeProvider>
   );
 }
