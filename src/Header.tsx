@@ -37,8 +37,8 @@ function Header({
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
       >
-        <MenuItem>Delete</MenuItem>
-        <MenuItem>Share</MenuItem>
+        <MenuItem>View as</MenuItem>
+        <MenuItem>Sort by</MenuItem>
       </Menu>
     </Toolbar>
   );

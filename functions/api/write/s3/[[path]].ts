@@ -3,6 +3,7 @@ import { S3Client } from "@/utils/s3";
 export const onRequest: PagesFunction<{
   AWS_ACCESS_KEY_ID: string;
   AWS_SECRET_ACCESS_KEY: string;
+  CF_ACCOUNT_ID: string;
 }> = async function (context) {
   const { request, env } = context;
 

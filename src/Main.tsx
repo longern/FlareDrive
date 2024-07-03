@@ -1,14 +1,25 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import FileList, { FileItem } from "./FileList";
 import {
   Box,
   Breadcrumbs,
   Button,
   CircularProgress,
+  IconButton,
   Link,
+  Menu,
+  MenuItem,
+  Slide,
+  Toolbar,
   Typography,
 } from "@mui/material";
-import { Home as HomeIcon } from "@mui/icons-material";
+import {
+  Close as CloseIcon,
+  Delete as DeleteIcon,
+  Download as DownloadIcon,
+  Home as HomeIcon,
+  MoreHoriz as MoreHorizIcon,
+} from "@mui/icons-material";
 import UploadFab from "./UploadFab";
 
 function Centered({ children }: { children: React.ReactNode }) {
@@ -66,6 +77,58 @@ function PathBreadcrumb({
   );
 }
 
+function MultiSelectToolbar({
+  multiSelected,
+  onClose,
+}: {
+  multiSelected: string[] | null;
+  onClose: () => void;
+}) {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  return (
+    <Slide direction="up" in={multiSelected !== null}>
+      <Toolbar
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          borderTop: "1px solid lightgray",
+          justifyContent: "space-evenly",
+        }}
+      >
+        <IconButton color="primary" onClick={onClose}>
+          <CloseIcon />
+        </IconButton>
+        <IconButton color="primary">
+          <DownloadIcon />
+        </IconButton>
+        <IconButton color="primary">
+          <DeleteIcon />
+        </IconButton>
+        <IconButton
+          color="primary"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+        >
+          <MoreHorizIcon />
+        </IconButton>
+        {multiSelected?.length && (
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+          >
+            {multiSelected.length === 1 && <MenuItem>Rename</MenuItem>}
+            <MenuItem>Delete</MenuItem>
+          </Menu>
+        )}
+      </Toolbar>
+    </Slide>
+  );
+}
+
 function Main({
   search,
   onError,
@@ -77,6 +140,7 @@ function Main({
   const [folders, setFolders] = useState<string[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [multiSelected, setMultiSelected] = useState<string[] | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -115,6 +179,20 @@ function Main({
     [files, search]
   );
 
+  const handleMultiSelect = useCallback(
+    (key: string) => {
+      if (multiSelected === null) {
+        setMultiSelected([key]);
+      } else if (multiSelected.includes(key)) {
+        const newSelected = multiSelected.filter((k) => k !== key);
+        setMultiSelected(newSelected.length ? newSelected : null);
+      } else {
+        setMultiSelected([...multiSelected, key]);
+      }
+    },
+    [multiSelected]
+  );
+
   return (
     <React.Fragment>
       {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
@@ -127,9 +205,15 @@ function Main({
           folders={filteredFolders}
           files={filteredFiles}
           onCwdChange={(newCwd: string) => setCwd(newCwd)}
+          multiSelected={multiSelected}
+          onMultiSelect={handleMultiSelect}
         />
       )}
       <UploadFab cwd={cwd} />
+      <MultiSelectToolbar
+        multiSelected={multiSelected}
+        onClose={() => setMultiSelected(null)}
+      />
     </React.Fragment>
   );
 }

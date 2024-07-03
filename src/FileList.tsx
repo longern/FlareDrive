@@ -39,23 +39,36 @@ function FileList({
   folders,
   files,
   onCwdChange,
+  multiSelected,
+  onMultiSelect,
 }: {
   folders: string[];
   files: FileItem[];
   onCwdChange: (newCwd: string) => void;
+  multiSelected: string[] | null;
+  onMultiSelect: (key: string) => void;
 }) {
   return (
     <List disablePadding>
       {folders.map((folder) => (
         <ListItem key={folder} disablePadding>
           <ListItemButton
-            onClick={() => onCwdChange(folder)}
+            selected={multiSelected?.includes(folder)}
             sx={{ minHeight: 64 }}
+            onClick={() =>
+              multiSelected !== null
+                ? onMultiSelect(folder)
+                : onCwdChange(folder)
+            }
+            onContextMenu={(e) => {
+              e.preventDefault();
+              onMultiSelect(folder);
+            }}
           >
             <ListItemIcon>
               <FolderIcon fontSize="large" />
             </ListItemIcon>
-            <ListItemText primary={folder.replace(/\/$/, "")} />
+            <ListItemText primary={folder.replace(/.*?([^/]+)\/$/, "$1")} />
           </ListItemButton>
         </ListItem>
       ))}
@@ -66,6 +79,17 @@ function FileList({
             href={`/raw/${file.key}`}
             target="_blank"
             rel="noopener noreferrer"
+            selected={multiSelected?.includes(file.key)}
+            onClick={(event) => {
+              if (multiSelected !== null) {
+                onMultiSelect(file.key);
+                event.preventDefault();
+              }
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              onMultiSelect(file.key);
+            }}
           >
             <ListItemIcon>
               {file.customMetadata?.thumbnail ? (

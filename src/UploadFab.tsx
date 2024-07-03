@@ -43,16 +43,14 @@ function UploadFab({ cwd }: { cwd: string }) {
   return (
     <React.Fragment>
       <Fab
-        variant="extended"
+        variant="circular"
         color="primary"
         size="large"
         sx={{
           position: "fixed",
           right: 16,
           bottom: 16,
-          width: 64,
-          height: 64,
-          borderRadius: 32,
+          color: "white",
         }}
         onClick={() => setOpen(true)}
       >
