@@ -5,9 +5,11 @@ import { MoreHoriz as MoreHorizIcon } from "@mui/icons-material";
 function Header({
   search,
   onSearchChange,
+  setShowProgressDialog,
 }: {
   search: string;
   onSearchChange: (newSearch: string) => void;
+  setShowProgressDialog: (show: boolean) => void;
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -39,6 +41,14 @@ function Header({
       >
         <MenuItem>View as</MenuItem>
         <MenuItem>Sort by</MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null);
+            setShowProgressDialog(true);
+          }}
+        >
+          Progress
+        </MenuItem>
       </Menu>
     </Toolbar>
   );

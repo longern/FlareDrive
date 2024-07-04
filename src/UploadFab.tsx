@@ -5,7 +5,7 @@ import {
   CreateNewFolder as CreateNewFolderIcon,
   Upload as UploadIcon,
 } from "@mui/icons-material";
-import { createFolder } from "./app/fs";
+import { createFolder } from "./app/transfer";
 
 function IconCaptionButton({
   icon,

@@ -9,6 +9,7 @@ import React from "react";
 
 import Header from "./Header";
 import Main from "./Main";
+import ProgressDialog from "./ProgressDialog";
 
 const globalStyles = (
   <GlobalStyles styles={{ "html, body, #root": { height: "100%" } }} />
@@ -20,6 +21,7 @@ const theme = createTheme({
 
 function App() {
   const [search, setSearch] = React.useState("");
+  const [showProgressDialog, setShowProgressDialog] = React.useState(false);
   const [error, setError] = React.useState<Error | null>(null);
 
   return (
@@ -29,6 +31,7 @@ function App() {
       <Header
         search={search}
         onSearchChange={(newSearch: string) => setSearch(newSearch)}
+        setShowProgressDialog={setShowProgressDialog}
       />
       <Main search={search} onError={setError} />
       <Snackbar
@@ -36,6 +39,10 @@ function App() {
         open={Boolean(error)}
         message={error?.message}
         onClose={() => setError(null)}
+      />
+      <ProgressDialog
+        open={showProgressDialog}
+        onClose={() => setShowProgressDialog(false)}
       />
     </ThemeProvider>
   );
