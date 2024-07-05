@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useCallback } from "react";
 
 import { Button, Card, Drawer, Fab, Grid, Typography } from "@mui/material";
 import {
   CreateNewFolder as CreateNewFolderIcon,
   Upload as UploadIcon,
 } from "@mui/icons-material";
-import { createFolder } from "./app/transfer";
+import { createFolder, processUploadQueue, uploadQueue } from "./app/transfer";
 
 function IconCaptionButton({
   icon,
@@ -37,8 +37,23 @@ function IconCaptionButton({
   );
 }
 
-function UploadFab({ cwd }: { cwd: string }) {
+function UploadFab({ cwd, onUpload }: { cwd: string; onUpload: () => void }) {
   const [open, setOpen] = React.useState(false);
+
+  const handleUpload = useCallback(() => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.onchange = async () => {
+      if (!input.files) return;
+      const files = Array.from(input.files);
+      uploadQueue.push(...files.map((file) => ({ file, basedir: cwd })));
+      await processUploadQueue();
+      setOpen(false);
+      onUpload();
+    };
+    input.click();
+  }, [cwd, onUpload]);
 
   return (
     <React.Fragment>
@@ -68,13 +83,18 @@ function UploadFab({ cwd }: { cwd: string }) {
               <IconCaptionButton
                 icon={<UploadIcon fontSize="large" />}
                 caption="Upload"
+                onClick={handleUpload}
               />
             </Grid>
             <Grid item xs={3}>
               <IconCaptionButton
                 icon={<CreateNewFolderIcon fontSize="large" />}
                 caption="Create Folder"
-                onClick={() => createFolder(cwd)}
+                onClick={async () => {
+                  setOpen(false);
+                  await createFolder(cwd);
+                  onUpload();
+                }}
               />
             </Grid>
           </Grid>

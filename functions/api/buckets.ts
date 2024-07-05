@@ -1,6 +1,11 @@
 import { S3Client } from "@/utils/s3";
 
-async function getCurrentBucket(context) {
+const getCurrentBucket: PagesFunction<
+  Record<string, R2Bucket> & {
+    AWS_ACCESS_KEY_ID: string;
+    AWS_SECRET_ACCESS_KEY: string;
+  }
+> = async function (context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const driveid = url.hostname.replace(/\..*/, "");
@@ -37,9 +42,14 @@ async function getCurrentBucket(context) {
   return new Response(currentBucket, {
     headers: { "cache-control": "max-age=604800" },
   });
-}
+};
 
-export async function onRequestGet(context) {
+export const onRequestGet: PagesFunction<
+  Record<string, R2Bucket> & {
+    AWS_ACCESS_KEY_ID: string;
+    AWS_SECRET_ACCESS_KEY: string;
+  }
+> = async function (context) {
   try {
     const { request, env } = context;
 
@@ -54,6 +64,6 @@ export async function onRequestGet(context) {
       `https://${env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com/`
     );
   } catch (e) {
-    return new Response(e.toString(), { status: 500 });
+    return new Response((e as Error).toString(), { status: 500 });
   }
-}
+};

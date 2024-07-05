@@ -4,8 +4,9 @@ import {
   CssBaseline,
   GlobalStyles,
   Snackbar,
+  Stack,
 } from "@mui/material";
-import React from "react";
+import React, { useState } from "react";
 
 import Header from "./Header";
 import Main from "./Main";
@@ -20,20 +21,22 @@ const theme = createTheme({
 });
 
 function App() {
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = useState("");
   const [showProgressDialog, setShowProgressDialog] = React.useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {globalStyles}
-      <Header
-        search={search}
-        onSearchChange={(newSearch: string) => setSearch(newSearch)}
-        setShowProgressDialog={setShowProgressDialog}
-      />
-      <Main search={search} onError={setError} />
+      <Stack sx={{ height: "100%" }}>
+        <Header
+          search={search}
+          onSearchChange={(newSearch: string) => setSearch(newSearch)}
+          setShowProgressDialog={setShowProgressDialog}
+        />
+        <Main search={search} onError={setError} />
+      </Stack>
       <Snackbar
         autoHideDuration={5000}
         open={Boolean(error)}

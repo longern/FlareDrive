@@ -6,7 +6,6 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
-import FolderIcon from "@mui/icons-material/Folder";
 import MimeIcon from "./MimeIcon";
 
 export interface FileItem {
@@ -36,42 +35,22 @@ function extractFilename(key: string) {
 }
 
 function FileList({
-  folders,
   files,
   onCwdChange,
   multiSelected,
   onMultiSelect,
+  emptyMessage,
 }: {
-  folders: string[];
   files: FileItem[];
   onCwdChange: (newCwd: string) => void;
   multiSelected: string[] | null;
   onMultiSelect: (key: string) => void;
+  emptyMessage?: React.ReactNode;
 }) {
-  return (
+  return files.length === 0 ? (
+    emptyMessage
+  ) : (
     <List disablePadding>
-      {folders.map((folder) => (
-        <ListItem key={folder} disablePadding>
-          <ListItemButton
-            selected={multiSelected?.includes(folder)}
-            sx={{ minHeight: 64 }}
-            onClick={() =>
-              multiSelected !== null
-                ? onMultiSelect(folder)
-                : onCwdChange(folder)
-            }
-            onContextMenu={(e) => {
-              e.preventDefault();
-              onMultiSelect(folder);
-            }}
-          >
-            <ListItemIcon>
-              <FolderIcon fontSize="large" />
-            </ListItemIcon>
-            <ListItemText primary={folder.replace(/.*?([^/]+)\/$/, "$1")} />
-          </ListItemButton>
-        </ListItem>
-      ))}
       {files.map((file) => (
         <ListItem key={file.key} disablePadding>
           <ListItemButton
@@ -83,6 +62,11 @@ function FileList({
             onClick={(event) => {
               if (multiSelected !== null) {
                 onMultiSelect(file.key);
+                event.preventDefault();
+              } else if (
+                file.httpMetadata?.contentType === "application/x-directory"
+              ) {
+                onCwdChange(file.key + "/");
                 event.preventDefault();
               }
             }}
@@ -109,9 +93,14 @@ function FileList({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               }}
-              secondary={`${new Date(
-                file.uploaded
-              ).toLocaleString()} • ${humanReadableSize(file.size)}`}
+              secondary={
+                <React.Fragment>
+                  {new Date(file.uploaded).toLocaleString()}
+                  {file.httpMetadata?.contentType !==
+                    "application/x-directory" &&
+                    ` • ${humanReadableSize(file.size)}`}
+                </React.Fragment>
+              }
             />
           </ListItemButton>
         </ListItem>

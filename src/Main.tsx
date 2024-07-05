@@ -1,26 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import FileList, { FileItem } from "./FileList";
+import { Home as HomeIcon } from "@mui/icons-material";
 import {
   Box,
   Breadcrumbs,
   Button,
   CircularProgress,
-  IconButton,
   Link,
-  Menu,
-  MenuItem,
-  Slide,
-  Toolbar,
   Typography,
 } from "@mui/material";
-import {
-  Close as CloseIcon,
-  Delete as DeleteIcon,
-  Download as DownloadIcon,
-  Home as HomeIcon,
-  MoreHoriz as MoreHorizIcon,
-} from "@mui/icons-material";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+
+import FileList, { FileItem } from "./FileList";
+import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadFab from "./UploadFab";
+import { copyPaste } from "./app/transfer";
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -65,6 +57,7 @@ function PathBreadcrumb({
         ) : (
           <Link
             key={index}
+            component="button"
             onClick={() => {
               onCwdChange(parts.slice(0, index + 1).join("/") + "/");
             }}
@@ -77,58 +70,6 @@ function PathBreadcrumb({
   );
 }
 
-function MultiSelectToolbar({
-  multiSelected,
-  onClose,
-}: {
-  multiSelected: string[] | null;
-  onClose: () => void;
-}) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  return (
-    <Slide direction="up" in={multiSelected !== null}>
-      <Toolbar
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          borderTop: "1px solid lightgray",
-          justifyContent: "space-evenly",
-        }}
-      >
-        <IconButton color="primary" onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-        <IconButton color="primary">
-          <DownloadIcon />
-        </IconButton>
-        <IconButton color="primary">
-          <DeleteIcon />
-        </IconButton>
-        <IconButton
-          color="primary"
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-        >
-          <MoreHorizIcon />
-        </IconButton>
-        {multiSelected?.length && (
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={() => setAnchorEl(null)}
-          >
-            {multiSelected.length === 1 && <MenuItem>Rename</MenuItem>}
-            <MenuItem>Delete</MenuItem>
-          </Menu>
-        )}
-      </Toolbar>
-    </Slide>
-  );
-}
-
 function Main({
   search,
   onError,
@@ -137,12 +78,11 @@ function Main({
   onError: (error: Error) => void;
 }) {
   const [cwd, setCwd] = React.useState("");
-  const [folders, setFolders] = useState<string[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [multiSelected, setMultiSelected] = useState<string[] | null>(null);
 
-  useEffect(() => {
+  const fetchFiles = useCallback(() => {
     setLoading(true);
     fetch(`/api/children/${cwd}`)
       .then((res) => {
@@ -153,29 +93,30 @@ function Main({
       })
       .then((files) => {
         setFiles(files.value);
-        setFolders(files.folders);
+        setMultiSelected(null);
       })
       .catch(onError)
       .finally(() => setLoading(false));
   }, [cwd, onError]);
 
-  const filteredFolders = useMemo(
-    () =>
-      search
-        ? folders.filter((folder) =>
-            folder.toLowerCase().includes(search.toLowerCase())
-          )
-        : folders,
-    [folders, search]
-  );
+  useEffect(() => {
+    fetchFiles();
+  }, [fetchFiles]);
 
   const filteredFiles = useMemo(
     () =>
-      search
+      (search
         ? files.filter((file) =>
             file.key.toLowerCase().includes(search.toLowerCase())
           )
-        : files,
+        : files
+      ).sort((a, b) =>
+        a.httpMetadata?.contentType === "application/x-directory"
+          ? -1
+          : b.httpMetadata?.contentType === "application/x-directory"
+          ? 1
+          : 0
+      ),
     [files, search]
   );
 
@@ -202,17 +143,43 @@ function Main({
         </Centered>
       ) : (
         <FileList
-          folders={filteredFolders}
           files={filteredFiles}
           onCwdChange={(newCwd: string) => setCwd(newCwd)}
           multiSelected={multiSelected}
           onMultiSelect={handleMultiSelect}
+          emptyMessage={<Centered>No files or folders</Centered>}
         />
       )}
-      <UploadFab cwd={cwd} />
+      {multiSelected === null && <UploadFab cwd={cwd} onUpload={fetchFiles} />}
       <MultiSelectToolbar
         multiSelected={multiSelected}
         onClose={() => setMultiSelected(null)}
+        onDownload={() => {
+          if (multiSelected?.length !== 1) return;
+          const a = document.createElement("a");
+          a.href = `/raw/${multiSelected[0]}`;
+          a.download = multiSelected[0].split("/").pop()!;
+        }}
+        onRename={async () => {
+          if (multiSelected?.length !== 1) return;
+          const key = multiSelected[0];
+          const newName = window.prompt("Rename to:");
+          if (!newName) return;
+          await copyPaste(key, `${cwd}${newName}`);
+          await fetch(`/api/write/items/${key}`, { method: "DELETE" });
+          fetchFiles();
+        }}
+        onDelete={async () => {
+          if (!multiSelected?.length) return;
+          const filenames = multiSelected
+            .map((key) => key.replace(/\/$/, "").split("/").pop())
+            .join("\n");
+          const confirmMessage = "Delete the following file(s) permanently?";
+          if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
+          for (const key of multiSelected)
+            await fetch(`/api/write/items/${key}`, { method: "DELETE" });
+          fetchFiles();
+        }}
       />
     </React.Fragment>
   );

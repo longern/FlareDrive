@@ -66,6 +66,7 @@ function xhrFetch(
     xhr.onload = () => {
       const headers = xhr
         .getAllResponseHeaders()
+        .trim()
         .split("\r\n")
         .reduce((acc, header) => {
           const [key, value] = header.split(": ");
@@ -154,8 +155,15 @@ export async function createFolder(cwd: string) {
   try {
     const folderName = window.prompt("Folder name");
     if (!folderName) return;
-    const uploadUrl = `/api/write/items/${cwd}${folderName}/_$folder$`;
-    await fetch(uploadUrl, { method: "PUT" });
+    if (folderName.includes("/")) {
+      window.alert("Invalid folder name");
+      return;
+    }
+    const uploadUrl = `/api/write/items/${cwd}${folderName}`;
+    await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": "application/x-directory" },
+    });
   } catch (error) {
     fetch("/api/write/")
       .then((value) => {
@@ -213,7 +221,7 @@ export async function processUploadQueue() {
         headers,
       });
     } else {
-      await xhrFetch(uploadUrl, { headers, body: file });
+      await xhrFetch(uploadUrl, { method: "PUT", headers, body: file });
     }
   } catch (error) {
     fetch("/api/write/")

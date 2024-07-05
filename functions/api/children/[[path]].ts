@@ -12,12 +12,10 @@ export const onRequestGet: PagesFunction = async function (context) {
       // @ts-ignore
       include: ["httpMetadata", "customMetadata"],
     });
-    const objKeys = objList.objects
-      .filter((obj) => !obj.key.endsWith("/_$folder$"))
-      .map((obj) => {
-        const { key, size, uploaded, httpMetadata, customMetadata } = obj;
-        return { key, size, uploaded, httpMetadata, customMetadata };
-      });
+    const objKeys = objList.objects.map((obj) => {
+      const { key, size, uploaded, httpMetadata, customMetadata } = obj;
+      return { key, size, uploaded, httpMetadata, customMetadata };
+    });
 
     let folders = objList.delimitedPrefixes;
     if (!path)

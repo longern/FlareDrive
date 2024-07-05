@@ -1,6 +1,8 @@
 import { notFound, parseBucketPath } from "@/utils/bucket";
 
-export async function onRequestPostCreateMultipart(context) {
+type EventContext = Parameters<PagesFunction>[0];
+
+export async function onRequestPostCreateMultipart(context: EventContext) {
   const [bucket, path] = parseBucketPath(context);
   if (!bucket) return notFound();
 
@@ -25,13 +27,14 @@ export async function onRequestPostCreateMultipart(context) {
   );
 }
 
-export async function onRequestPostCompleteMultipart(context) {
+export async function onRequestPostCompleteMultipart(context: EventContext) {
   const [bucket, path] = parseBucketPath(context);
   if (!bucket) return notFound();
 
   const request: Request = context.request;
   const url = new URL(request.url);
   const uploadId = new URLSearchParams(url.search).get("uploadId");
+  if (!uploadId) return notFound();
   const multipartUpload = bucket.resumeMultipartUpload(path, uploadId);
 
   const completeBody: { parts: Array<any> } = await request.json();
@@ -61,7 +64,7 @@ export const onRequestPost: PagesFunction = async function (context) {
   return new Response("Method not allowed", { status: 405 });
 };
 
-export async function onRequestPutMultipart(context) {
+export async function onRequestPutMultipart(context: EventContext) {
   const [bucket, path] = parseBucketPath(context);
   if (!bucket) return notFound();
 
@@ -69,6 +72,7 @@ export async function onRequestPutMultipart(context) {
   const url = new URL(request.url);
 
   const uploadId = new URLSearchParams(url.search).get("uploadId");
+  if (!uploadId) return notFound();
   const multipartUpload = bucket.resumeMultipartUpload(path, uploadId);
 
   const partNumberStr = new URLSearchParams(url.search).get("partNumber");
@@ -119,7 +123,12 @@ export const onRequestPut: PagesFunction = async function (context) {
   if (request.headers.has("fd-thumbnail"))
     customMetadata.thumbnail = request.headers.get("fd-thumbnail")!;
 
-  const obj = await bucket.put(path, content, { customMetadata });
+  const obj = await bucket.put(path, content, {
+    httpMetadata: {
+      contentType: request.headers.get("content-type") ?? undefined,
+    },
+    customMetadata,
+  });
   const { key, size, uploaded } = obj;
   return new Response(JSON.stringify({ key, size, uploaded }), {
     headers: { "Content-Type": "application/json" },
