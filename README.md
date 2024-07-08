@@ -9,6 +9,7 @@ Cloudflare R2 storage manager with Pages and Workers. Free 10 GB storage. Free s
 - Create folders
 - Search files
 - Image/video thumbnails
+- WebDAV endpoint
 
 ## Usage
 
@@ -25,6 +26,7 @@ Steps:
 1. Fork this project and connect your fork with Cloudflare Pages
 2. Add a custom domain
 3. Bind your R2 bucket to `BUCKET` varaible
+   - (Optional) Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD` to enable WebDAV endpoint (`/webdav`)
 4. Manually redeploy to make R2 bindings take effect
 
 ### Authentication
@@ -35,3 +37,11 @@ There is no built-in authentication support. By default everyone can read and wr
 2. In **Access**->**Applications**, create a self-hosted application
 3. Set **Path** as `api/write/` to disable public write or leave it blank to disable public read
 4. Create a policy which accepts your email only
+
+## Acknowledgments
+
+WebDAV related code is based on [r2-webdav](
+  https://github.com/abersheeran/r2-webdav
+) project by [abersheeran](
+  https://github.com/abersheeran
+).
