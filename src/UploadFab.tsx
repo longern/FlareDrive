@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { forwardRef, useCallback } from "react";
 
 import { Button, Card, Drawer, Fab, Grid, Typography } from "@mui/material";
 import {
@@ -37,7 +37,10 @@ function IconCaptionButton({
   );
 }
 
-function UploadFab({ cwd, onUpload }: { cwd: string; onUpload: () => void }) {
+const UploadFab = forwardRef<
+  HTMLButtonElement,
+  { cwd: string; onUpload: () => void }
+>(function ({ cwd, onUpload }, ref) {
   const [open, setOpen] = React.useState(false);
 
   const handleUpload = useCallback(() => {
@@ -56,21 +59,20 @@ function UploadFab({ cwd, onUpload }: { cwd: string; onUpload: () => void }) {
   }, [cwd, onUpload]);
 
   return (
-    <React.Fragment>
-      <Fab
-        variant="circular"
-        color="primary"
-        size="large"
-        sx={{
-          position: "fixed",
-          right: 16,
-          bottom: 16,
-          color: "white",
-        }}
-        onClick={() => setOpen(true)}
-      >
-        <UploadIcon fontSize="large" />
-      </Fab>
+    <Fab
+      ref={ref}
+      variant="circular"
+      color="primary"
+      size="large"
+      sx={{
+        position: "fixed",
+        right: 16,
+        bottom: 16,
+        color: "white",
+      }}
+      onClick={() => setOpen(true)}
+    >
+      <UploadIcon fontSize="large" />
       <Drawer
         anchor="bottom"
         open={open}
@@ -100,8 +102,8 @@ function UploadFab({ cwd, onUpload }: { cwd: string; onUpload: () => void }) {
           </Grid>
         </Card>
       </Drawer>
-    </React.Fragment>
+    </Fab>
   );
-}
+});
 
 export default UploadFab;

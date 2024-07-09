@@ -1,10 +1,10 @@
 import React from "react";
 import {
-  List,
-  ListItem,
+  Grid,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Typography,
 } from "@mui/material";
 import MimeIcon from "./MimeIcon";
 
@@ -34,7 +34,7 @@ function extractFilename(key: string) {
   return key.split("/").pop();
 }
 
-function FileList({
+function FileGrid({
   files,
   onCwdChange,
   multiSelected,
@@ -50,9 +50,9 @@ function FileList({
   return files.length === 0 ? (
     emptyMessage
   ) : (
-    <List disablePadding>
+    <Grid container>
       {files.map((file) => (
-        <ListItem key={file.key} disablePadding>
+        <Grid item key={file.key} xs={12} sm={6} md={4} lg={3} xl={2}>
           <ListItemButton
             component="a"
             href={`/raw/${file.key}`}
@@ -95,18 +95,25 @@ function FileList({
               }}
               secondary={
                 <React.Fragment>
-                  {new Date(file.uploaded).toLocaleString()}
+                  <Typography
+                    sx={{
+                      display: "inline-block",
+                      minWidth: "160px",
+                      marginRight: 1,
+                    }}
+                  >
+                    {new Date(file.uploaded).toLocaleString()}
+                  </Typography>
                   {file.httpMetadata?.contentType !==
-                    "application/x-directory" &&
-                    ` • ${humanReadableSize(file.size)}`}
+                    "application/x-directory" && humanReadableSize(file.size)}
                 </React.Fragment>
               }
             />
           </ListItemButton>
-        </ListItem>
+        </Grid>
       ))}
-    </List>
+    </Grid>
   );
 }
 
-export default FileList;
+export default FileGrid;

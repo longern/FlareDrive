@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import FileList, { FileItem } from "./FileList";
+import FileGrid, { FileItem } from "./FileGrid";
 import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadFab from "./UploadFab";
 import { copyPaste } from "./app/transfer";
@@ -142,7 +142,7 @@ function Main({
           <CircularProgress />
         </Centered>
       ) : (
-        <FileList
+        <FileGrid
           files={filteredFiles}
           onCwdChange={(newCwd: string) => setCwd(newCwd)}
           multiSelected={multiSelected}
@@ -159,6 +159,7 @@ function Main({
           const a = document.createElement("a");
           a.href = `/raw/${multiSelected[0]}`;
           a.download = multiSelected[0].split("/").pop()!;
+          a.click();
         }}
         onRename={async () => {
           if (multiSelected?.length !== 1) return;
