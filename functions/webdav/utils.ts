@@ -4,6 +4,8 @@ export interface RequestHandlerParams {
   request: Request;
 }
 
+export const WEBDAV_ENDPOINT = "/webdav/";
+
 export async function* listAll(
   bucket: R2Bucket,
   prefix?: string,

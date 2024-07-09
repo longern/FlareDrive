@@ -5,7 +5,7 @@ export async function handleRequestDelete({
   bucket,
   path,
 }: RequestHandlerParams) {
-  if (path === "") {
+  if (path !== "") {
     const obj = await bucket.head(path);
     if (obj === null) return notFound();
     await bucket.delete(path);

@@ -50,7 +50,7 @@ function FileGrid({
   return files.length === 0 ? (
     emptyMessage
   ) : (
-    <Grid container>
+    <Grid container sx={{ overflowY: "auto", paddingBottom: "48px" }}>
       {files.map((file) => (
         <Grid item key={file.key} xs={12} sm={6} md={4} lg={3} xl={2}>
           <ListItemButton

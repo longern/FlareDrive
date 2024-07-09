@@ -4,6 +4,8 @@ import { handleRequestPropfind } from "./propfind";
 import { RequestHandlerParams } from "./utils";
 import { handleRequestMkcol } from "./mkcol";
 import { handleRequestPut } from "./put";
+import { handleRequestCopy } from "./copy";
+import { handleRequestDelete } from "./delete";
 
 async function handleRequestOptions() {
   return new Response(null, {
@@ -24,8 +26,9 @@ const HANDLERS: Record<
   HEAD: handleRequestGet,
   GET: handleRequestGet,
   PUT: handleRequestPut,
-  COPY: handleRequestGet,
+  COPY: handleRequestCopy,
   MOVE: handleRequestGet,
+  DELETE: handleRequestDelete,
 };
 
 export const onRequest: PagesFunction<{
