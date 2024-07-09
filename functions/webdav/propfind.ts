@@ -11,6 +11,7 @@ type DavProperties = {
   getetag: string | undefined;
   getlastmodified: string | undefined;
   resourcetype: string;
+  "fd:thumbnail": string | undefined;
 };
 
 function fromR2Object(object: R2Object | typeof ROOT_OBJECT): DavProperties {
@@ -26,6 +27,7 @@ function fromR2Object(object: R2Object | typeof ROOT_OBJECT): DavProperties {
       object.httpMetadata?.contentType === "application/x-directory"
         ? "<collection />"
         : "",
+    "fd:thumbnail": object.customMetadata?.thumbnail,
   };
 }
 
@@ -56,7 +58,7 @@ export async function handleRequestPropfind({
   request,
 }: RequestHandlerParams) {
   const responseTemplate = `<?xml version="1.0" encoding="utf-8" ?>
-<multistatus xmlns="DAV:">
+<multistatus xmlns="DAV:" xmlns:fd="flaredrive">
 {{items}}
 </multistatus>`;
 

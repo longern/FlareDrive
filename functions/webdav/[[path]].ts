@@ -31,25 +31,33 @@ const HANDLERS: Record<
 export const onRequest: PagesFunction<{
   WEBDAV_USERNAME: string;
   WEBDAV_PASSWORD: string;
+  WEBDAV_PUBLIC_READ?: string;
 }> = async function (context) {
-  const { request, env } = context;
+  const env = context.env;
+  const request: Request = context.request;
   if (request.method === "OPTIONS") return handleRequestOptions();
 
-  if (!env.WEBDAV_USERNAME || env.WEBDAV_PASSWORD)
-    return new Response("WebDAV not configured", { status: 500 });
+  const skipAuth =
+    env.WEBDAV_PUBLIC_READ &&
+    ["GET", "HEAD", "PROPFIND"].includes(request.method);
 
-  const auth = context.request.headers.get("Authorization");
-  if (!auth) {
-    return new Response("Unauthorized", {
-      status: 401,
-      headers: { "WWW-Authenticate": `Basic realm="WebDAV"` },
-    });
+  if (!skipAuth) {
+    if (!env.WEBDAV_USERNAME || !env.WEBDAV_PASSWORD)
+      return new Response("WebDAV not configured", { status: 500 });
+
+    const auth = request.headers.get("Authorization");
+    if (!auth) {
+      return new Response("Unauthorized", {
+        status: 401,
+        headers: { "WWW-Authenticate": `Basic realm="WebDAV"` },
+      });
+    }
+    const expectedAuth = `Basic ${btoa(
+      `${env.WEBDAV_USERNAME}:${env.WEBDAV_PASSWORD}`
+    )}`;
+    if (auth !== expectedAuth)
+      return new Response("Unauthorized", { status: 401 });
   }
-  const expectedAuth = `Basic ${btoa(
-    `${env.WEBDAV_USERNAME}:${env.WEBDAV_PASSWORD}`
-  )}`;
-  if (auth !== expectedAuth)
-    return new Response("Unauthorized", { status: 401 });
 
   const [bucket, path] = parseBucketPath(context);
   if (!bucket) return notFound();

@@ -26,7 +26,8 @@ Steps:
 1. Fork this project and connect your fork with Cloudflare Pages
 2. Add a custom domain
 3. Bind your R2 bucket to `BUCKET` varaible
-   - (Optional) Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD` to enable WebDAV endpoint (`/webdav`)
+   - Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD` to enable WebDAV endpoint (`/webdav`)
+   - (Optional) Set `WEBDAV_PUBLIC_READ` to enable public read access
 4. Manually redeploy to make R2 bindings take effect
 
 ### Authentication

@@ -35,6 +35,7 @@ export const ROOT_OBJECT = {
     contentDisposition: undefined,
     contentLanguage: undefined,
   },
+  customMetadata: undefined,
   size: 0,
   etag: undefined,
 };
