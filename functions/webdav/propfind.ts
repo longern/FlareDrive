@@ -88,7 +88,6 @@ export async function handleRequestPropfind({
           .filter(([_, value]) => value !== undefined)
           .map(([key, value]) => `<${key}>${value}</${key}>`)
           .join("\n")}
-        }
       </prop>
       <status>HTTP/1.1 200 OK</status>
     </propstat>

@@ -70,6 +70,47 @@ function PathBreadcrumb({
   );
 }
 
+async function fetchPath(path: string) {
+  const res = await fetch(`/webdav/${path}`, {
+    method: "PROPFIND",
+    headers: { Depth: "1" },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch");
+  if (!res.headers.get("Content-Type")?.includes("application/xml"))
+    throw new Error("Invalid response");
+
+  const parser = new DOMParser();
+  const text = await res.text();
+  const document = parser.parseFromString(text, "application/xml");
+  const items: FileItem[] = Array.from(document.querySelectorAll("response"))
+    .filter(
+      (response) =>
+        response.querySelector("href")?.textContent !==
+        encodeURI("/webdav/" + path.replace(/\/$/, ""))
+    )
+    .map((response) => {
+      const href = response.querySelector("href")?.textContent;
+      if (!href) throw new Error("Invalid response");
+      const contentType = response.querySelector("getcontenttype")?.textContent;
+      const size = response.querySelector("getcontentlength")?.textContent;
+      const lastModified =
+        response.querySelector("getlastmodified")?.textContent;
+      const thumbnail = response.getElementsByTagNameNS(
+        "flaredrive",
+        "thumbnail"
+      )[0]?.textContent;
+      return {
+        key: decodeURI(href).replace(/^\/webdav\//, ""),
+        size: size ? Number(size) : 0,
+        uploaded: lastModified!,
+        httpMetadata: { contentType: contentType! },
+        customMetadata: { thumbnail },
+      } as FileItem;
+    });
+  return items;
+}
+
 function Main({
   search,
   onError,
@@ -84,15 +125,9 @@ function Main({
 
   const fetchFiles = useCallback(() => {
     setLoading(true);
-    fetch(`/api/children/${cwd}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch");
-        if (!res.headers.get("Content-Type")?.includes("application/json"))
-          throw new Error("Invalid response");
-        return res.json() as Promise<{ folders: string[]; value: FileItem[] }>;
-      })
+    fetchPath(cwd)
       .then((files) => {
-        setFiles(files.value);
+        setFiles(files);
         setMultiSelected(null);
       })
       .catch(onError)
@@ -157,7 +192,7 @@ function Main({
         onDownload={() => {
           if (multiSelected?.length !== 1) return;
           const a = document.createElement("a");
-          a.href = `/raw/${multiSelected[0]}`;
+          a.href = `/webdav/${multiSelected[0]}`;
           a.download = multiSelected[0].split("/").pop()!;
           a.click();
         }}

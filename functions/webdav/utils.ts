@@ -19,7 +19,8 @@ export async function* listAll(
       include: ["httpMetadata", "customMetadata"],
     });
 
-    yield* r2Objects.objects;
+    for await (const obj of r2Objects.objects)
+      if (!obj.key.startsWith("_$flaredrive$/")) yield obj;
 
     if (r2Objects.truncated) {
       cursor = r2Objects.cursor;

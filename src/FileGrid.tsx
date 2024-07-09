@@ -1,10 +1,10 @@
 import React from "react";
 import {
+  Box,
   Grid,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Typography,
 } from "@mui/material";
 import MimeIcon from "./MimeIcon";
 
@@ -55,7 +55,7 @@ function FileGrid({
         <Grid item key={file.key} xs={12} sm={6} md={4} lg={3} xl={2}>
           <ListItemButton
             component="a"
-            href={`/raw/${file.key}`}
+            href={`/webdav/${file.key}`}
             target="_blank"
             rel="noopener noreferrer"
             selected={multiSelected?.includes(file.key)}
@@ -78,7 +78,7 @@ function FileGrid({
             <ListItemIcon>
               {file.customMetadata?.thumbnail ? (
                 <img
-                  src={`/raw/_$flaredrive$/thumbnails/${file.customMetadata.thumbnail}.png`}
+                  src={`/webdav/_$flaredrive$/thumbnails/${file.customMetadata.thumbnail}.png`}
                   alt={file.key}
                   style={{ width: 36, height: 36, objectFit: "cover" }}
                 />
@@ -95,7 +95,7 @@ function FileGrid({
               }}
               secondary={
                 <React.Fragment>
-                  <Typography
+                  <Box
                     sx={{
                       display: "inline-block",
                       minWidth: "160px",
@@ -103,7 +103,7 @@ function FileGrid({
                     }}
                   >
                     {new Date(file.uploaded).toLocaleString()}
-                  </Typography>
+                  </Box>
                   {file.httpMetadata?.contentType !==
                     "application/x-directory" && humanReadableSize(file.size)}
                 </React.Fragment>
