@@ -24,9 +24,7 @@ export async function* listAll(
     for await (const obj of r2Objects.objects)
       if (!obj.key.startsWith("_$flaredrive$/")) yield obj;
 
-    if (r2Objects.truncated) {
-      cursor = r2Objects.cursor;
-    }
+    if (r2Objects.truncated) cursor = r2Objects.cursor;
   } while (r2Objects.truncated);
 }
 

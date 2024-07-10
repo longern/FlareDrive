@@ -19,6 +19,13 @@ export async function handleRequestCopy({
     return new Response("Bad Request", { status: 400 });
   const destination = destPathname.slice(WEBDAV_ENDPOINT.length);
 
+  if (
+    destination === path ||
+    (src.httpMetadata?.contentType === "application/x-directory" &&
+      destination.startsWith(path + "/"))
+  )
+    return new Response("Bad Request", { status: 400 });
+
   // Check if the destination already exists
   const destinationExists = await bucket.head(destination);
   if (dontOverwrite && destinationExists)
@@ -51,6 +58,7 @@ export async function handleRequestCopy({
           promise_array.push(copy(object));
         }
         await Promise.all(promise_array);
+        break;
       }
       default:
         return new Response("Bad Request", { status: 400 });

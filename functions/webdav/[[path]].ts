@@ -6,6 +6,7 @@ import { handleRequestMkcol } from "./mkcol";
 import { handleRequestPut } from "./put";
 import { handleRequestCopy } from "./copy";
 import { handleRequestDelete } from "./delete";
+import { handleRequestMove } from "./move";
 
 async function handleRequestOptions() {
   return new Response(null, {
@@ -27,7 +28,7 @@ const HANDLERS: Record<
   GET: handleRequestGet,
   PUT: handleRequestPut,
   COPY: handleRequestCopy,
-  MOVE: handleRequestGet,
+  MOVE: handleRequestMove,
   DELETE: handleRequestDelete,
 };
 

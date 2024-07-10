@@ -1,5 +1,4 @@
-import { notFound } from "@/utils/bucket";
-import { RequestHandlerParams } from "./utils";
+import { RequestHandlerParams, ROOT_OBJECT } from "./utils";
 
 export async function handleRequestPut({
   bucket,
@@ -11,11 +10,10 @@ export async function handleRequestPut({
   }
 
   // Check if the parent directory exists
-  let parent_dir = path.replace(/(\/|^)[^/]*$/, "");
-
-  if (parent_dir !== "" && !(await bucket.head(parent_dir))) {
-    return new Response("Conflict", { status: 409 });
-  }
+  const parentPath = path.replace(/(\/|^)[^/]*$/, "");
+  const parentDir =
+    parentPath === "" ? ROOT_OBJECT : await bucket.head(parentPath);
+  if (parentDir === null) return new Response("Conflict", { status: 409 });
 
   const result = await bucket.put(path, request.body, {
     onlyIf: request.headers,

@@ -1,21 +1,21 @@
-import { RequestHandlerParams } from "./utils";
+import { RequestHandlerParams, ROOT_OBJECT } from "./utils";
 
 export async function handleRequestMkcol({
   bucket,
   path,
+  request,
 }: RequestHandlerParams) {
   // Check if the resource already exists
-  let resource = await bucket.head(path);
+  const resource = await bucket.head(path);
   if (resource !== null) {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
   // Check if the parent directory exists
-  let parent_dir = path.replace(/(\/|^)[^/]*$/, "");
-
-  if (parent_dir !== "" && !(await bucket.head(parent_dir))) {
-    return new Response("Conflict", { status: 409 });
-  }
+  const parentPath = path.replace(/(\/|^)[^/]*$/, "");
+  const parentDir =
+    parentPath === "" ? ROOT_OBJECT : await bucket.head(parentPath);
+  if (parentDir === null) return new Response("Conflict", { status: 409 });
 
   await bucket.put(path, "", {
     httpMetadata: { contentType: "application/x-directory" },
