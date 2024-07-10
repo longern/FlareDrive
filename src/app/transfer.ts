@@ -1,9 +1,11 @@
 import pLimit from "p-limit";
 
-import { FileItem } from "../FileGrid";
+import { encodeKey, FileItem } from "../FileGrid";
+
+const WEBDAV_ENDPOINT = "/webdav/";
 
 export async function fetchPath(path: string) {
-  const res = await fetch(`/webdav/${path}`, {
+  const res = await fetch(`${WEBDAV_ENDPOINT}${encodeKey(path)}`, {
     method: "PROPFIND",
     headers: { Depth: "1" },
   });
@@ -18,8 +20,9 @@ export async function fetchPath(path: string) {
   const items: FileItem[] = Array.from(document.querySelectorAll("response"))
     .filter(
       (response) =>
-        response.querySelector("href")?.textContent !==
-        encodeURI("/webdav/" + path.replace(/\/$/, ""))
+        decodeURIComponent(
+          response.querySelector("href")?.textContent ?? ""
+        ).slice(WEBDAV_ENDPOINT.length) !== path.replace(/\/$/, "")
     )
     .map((response) => {
       const href = response.querySelector("href")?.textContent;

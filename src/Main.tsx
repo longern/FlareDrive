@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import FileGrid, { FileItem } from "./FileGrid";
+import FileGrid, { encodeKey, FileItem, isDirectory } from "./FileGrid";
 import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import { copyPaste, fetchPath } from "./app/transfer";
@@ -105,29 +105,21 @@ function Main({
             file.key.toLowerCase().includes(search.toLowerCase())
           )
         : files
-      ).sort((a, b) =>
-        a.httpMetadata?.contentType === "application/x-directory"
-          ? -1
-          : b.httpMetadata?.contentType === "application/x-directory"
-          ? 1
-          : 0
-      ),
+      ).sort((a, b) => (isDirectory(a) ? -1 : isDirectory(b) ? 1 : 0)),
     [files, search]
   );
 
-  const handleMultiSelect = useCallback(
-    (key: string) => {
+  const handleMultiSelect = useCallback((key: string) => {
+    setMultiSelected((multiSelected) => {
       if (multiSelected === null) {
-        setMultiSelected([key]);
+        return [key];
       } else if (multiSelected.includes(key)) {
         const newSelected = multiSelected.filter((k) => k !== key);
-        setMultiSelected(newSelected.length ? newSelected : null);
-      } else {
-        setMultiSelected([...multiSelected, key]);
+        return newSelected.length ? newSelected : null;
       }
-    },
-    [multiSelected]
-  );
+      return [...multiSelected, key];
+    });
+  }, []);
 
   return (
     <React.Fragment>
@@ -160,7 +152,7 @@ function Main({
         onDownload={() => {
           if (multiSelected?.length !== 1) return;
           const a = document.createElement("a");
-          a.href = `/webdav/${multiSelected[0]}`;
+          a.href = `/webdav/${encodeKey(multiSelected[0])}`;
           a.download = multiSelected[0].split("/").pop()!;
           a.click();
         }}
@@ -181,7 +173,7 @@ function Main({
           const confirmMessage = "Delete the following file(s) permanently?";
           if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
           for (const key of multiSelected)
-            await fetch(`/api/write/items/${key}`, { method: "DELETE" });
+            await fetch(`/webdav/${encodeKey(key)}`, { method: "DELETE" });
           fetchFiles();
         }}
       />

@@ -12,12 +12,8 @@ export interface FileItem {
   key: string;
   size: number;
   uploaded: string;
-  httpMetadata: {
-    contentType: string;
-  };
-  customMetadata?: {
-    thumbnail: string;
-  };
+  httpMetadata: { contentType: string };
+  customMetadata?: { thumbnail?: string };
 }
 
 function humanReadableSize(size: number) {
@@ -32,6 +28,14 @@ function humanReadableSize(size: number) {
 
 function extractFilename(key: string) {
   return key.split("/").pop();
+}
+
+export function encodeKey(key: string) {
+  return key.split("/").map(encodeURIComponent).join("/");
+}
+
+export function isDirectory(file: FileItem) {
+  return file.httpMetadata?.contentType === "application/x-directory";
 }
 
 function FileGrid({
@@ -55,7 +59,7 @@ function FileGrid({
         <Grid item key={file.key} xs={12} sm={6} md={4} lg={3} xl={2}>
           <ListItemButton
             component="a"
-            href={`/webdav/${file.key}`}
+            href={`/webdav/${encodeKey(file.key)}`}
             target="_blank"
             rel="noopener noreferrer"
             selected={multiSelected?.includes(file.key)}
@@ -63,9 +67,7 @@ function FileGrid({
               if (multiSelected !== null) {
                 onMultiSelect(file.key);
                 event.preventDefault();
-              } else if (
-                file.httpMetadata?.contentType === "application/x-directory"
-              ) {
+              } else if (isDirectory(file)) {
                 onCwdChange(file.key + "/");
                 event.preventDefault();
               }
@@ -104,8 +106,7 @@ function FileGrid({
                   >
                     {new Date(file.uploaded).toLocaleString()}
                   </Box>
-                  {file.httpMetadata?.contentType !==
-                    "application/x-directory" && humanReadableSize(file.size)}
+                  {!isDirectory(file) && humanReadableSize(file.size)}
                 </React.Fragment>
               }
             />

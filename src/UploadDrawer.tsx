@@ -19,11 +19,7 @@ function IconCaptionButton({
   return (
     <Button
       color="inherit"
-      sx={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-      }}
+      sx={{ width: "100%", display: "flex", flexDirection: "column" }}
       onClick={onClick}
     >
       {icon}
@@ -45,12 +41,7 @@ export const UploadFab = forwardRef<HTMLButtonElement, { onClick: () => void }>(
         variant="circular"
         color="primary"
         size="large"
-        sx={{
-          position: "fixed",
-          right: 16,
-          bottom: 16,
-          color: "white",
-        }}
+        sx={{ position: "fixed", right: 16, bottom: 16, color: "white" }}
         onClick={onClick}
       >
         <UploadIcon fontSize="large" />
