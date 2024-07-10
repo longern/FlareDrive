@@ -1,5 +1,48 @@
 import pLimit from "p-limit";
 
+import { FileItem } from "../FileGrid";
+
+export async function fetchPath(path: string) {
+  const res = await fetch(`/webdav/${path}`, {
+    method: "PROPFIND",
+    headers: { Depth: "1" },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch");
+  if (!res.headers.get("Content-Type")?.includes("application/xml"))
+    throw new Error("Invalid response");
+
+  const parser = new DOMParser();
+  const text = await res.text();
+  const document = parser.parseFromString(text, "application/xml");
+  const items: FileItem[] = Array.from(document.querySelectorAll("response"))
+    .filter(
+      (response) =>
+        response.querySelector("href")?.textContent !==
+        encodeURI("/webdav/" + path.replace(/\/$/, ""))
+    )
+    .map((response) => {
+      const href = response.querySelector("href")?.textContent;
+      if (!href) throw new Error("Invalid response");
+      const contentType = response.querySelector("getcontenttype")?.textContent;
+      const size = response.querySelector("getcontentlength")?.textContent;
+      const lastModified =
+        response.querySelector("getlastmodified")?.textContent;
+      const thumbnail = response.getElementsByTagNameNS(
+        "flaredrive",
+        "thumbnail"
+      )[0]?.textContent;
+      return {
+        key: decodeURI(href).replace(/^\/webdav\//, ""),
+        size: size ? Number(size) : 0,
+        uploaded: lastModified!,
+        httpMetadata: { contentType: contentType! },
+        customMetadata: { thumbnail },
+      } as FileItem;
+    });
+  return items;
+}
+
 const THUMBNAIL_SIZE = 144;
 
 export async function generateThumbnail(file: File) {
