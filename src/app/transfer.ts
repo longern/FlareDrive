@@ -1,3 +1,5 @@
+import pLimit from "p-limit";
+
 const THUMBNAIL_SIZE = 144;
 
 export async function generateThumbnail(file: File) {
@@ -28,6 +30,20 @@ export async function generateThumbnail(file: File) {
       }
     );
     ctx.drawImage(video, 0, 0, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+  } else if (file.type === "application/pdf") {
+    const pdfjsLib = await import(
+      // @ts-ignore
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs"
+    );
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+    const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+    const page = await pdf.getPage(1);
+    const { width, height } = page.getViewport({ scale: 1 });
+    var scale = THUMBNAIL_SIZE / Math.max(width, height);
+    const viewport = page.getViewport({ scale });
+    const renderContext = { canvasContext: ctx, viewport };
+    await page.render(renderContext).promise;
   }
 
   const thumbnailBlob = await new Promise<Blob>((resolve) =>
@@ -106,14 +122,16 @@ export async function multipartUpload(
   const { uploadId } = await uploadResponse.json<{ uploadId: string }>();
   const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
 
-  const promiseGenerator = function* () {
-    for (let i = 1; i <= totalChunks; i++) {
+  const limit = pLimit(2);
+  const parts = Array.from({ length: totalChunks }, (_, i) => i + 1);
+  const promises = parts.map((i) =>
+    limit(async () => {
       const chunk = file.slice((i - 1) * SIZE_LIMIT, i * SIZE_LIMIT);
       const searchParams = new URLSearchParams({
         partNumber: i.toString(),
         uploadId,
       });
-      yield xhrFetch(`/api/write/items/${key}?${searchParams}`, {
+      const res = await xhrFetch(`/api/write/items/${key}?${searchParams}`, {
         method: "PUT",
         headers,
         body: chunk,
@@ -124,18 +142,11 @@ export async function multipartUpload(
             total: file.size,
           });
         },
-      }).then((res) => ({
-        partNumber: i,
-        etag: res.headers.get("etag")!,
-      }));
-    }
-  };
-
-  const uploadedParts = [];
-  for (const part of promiseGenerator()) {
-    const { partNumber, etag } = await part;
-    uploadedParts[partNumber - 1] = { partNumber, etag };
-  }
+      });
+      return { partNumber: i, etag: res.headers.get("etag")! };
+    })
+  );
+  const uploadedParts = await Promise.all(promises);
   const completeParams = new URLSearchParams({ uploadId });
   await fetch(`/api/write/items/${key}?${completeParams}`, {
     method: "POST",
@@ -187,7 +198,11 @@ export async function processUploadQueue() {
   const { basedir, file } = uploadQueue.shift()!;
   let thumbnailDigest = null;
 
-  if (file.type.startsWith("image/") || file.type === "video/mp4") {
+  if (
+    file.type.startsWith("image/") ||
+    file.type === "video/mp4" ||
+    file.type === "application/pdf"
+  ) {
     try {
       const thumbnailBlob = await generateThumbnail(file);
       const digestHex = await blobDigest(thumbnailBlob);
