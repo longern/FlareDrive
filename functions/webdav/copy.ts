@@ -1,3 +1,5 @@
+import pLimit from "p-limit";
+
 import { notFound } from "@/utils/bucket";
 import { listAll, RequestHandlerParams, WEBDAV_ENDPOINT } from "./utils";
 
@@ -14,10 +16,11 @@ export async function handleRequestCopy({
   const src = await bucket.get(path);
   if (src === null) return notFound();
 
-  const destPathname = new URL(destinationHeader).pathname.replace(/\/$/, "");
-  if (!destPathname.startsWith(WEBDAV_ENDPOINT))
+  const destPathname = new URL(destinationHeader).pathname;
+  const decodedPathname = decodeURIComponent(destPathname).replace(/\/$/, "");
+  if (!decodedPathname.startsWith(WEBDAV_ENDPOINT))
     return new Response("Bad Request", { status: 400 });
-  const destination = destPathname.slice(WEBDAV_ENDPOINT.length);
+  const destination = decodedPathname.slice(WEBDAV_ENDPOINT.length);
 
   if (
     destination === path ||
@@ -53,11 +56,12 @@ export async function handleRequestCopy({
             customMetadata: object.customMetadata,
           });
         };
-        const promise_array = [];
+        const limit = pLimit(5);
+        const promises = [];
         for await (const object of listAll(bucket, prefix, true)) {
-          promise_array.push(copy(object));
+          promises.push(limit(() => copy(object)));
         }
-        await Promise.all(promise_array);
+        await Promise.all(promises);
         break;
       }
       default:
