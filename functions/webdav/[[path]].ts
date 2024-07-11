@@ -1,12 +1,13 @@
 import { notFound, parseBucketPath } from "@/utils/bucket";
-import { handleRequestGet } from "./get";
-import { handleRequestPropfind } from "./propfind";
-import { RequestHandlerParams } from "./utils";
-import { handleRequestMkcol } from "./mkcol";
-import { handleRequestPut } from "./put";
 import { handleRequestCopy } from "./copy";
 import { handleRequestDelete } from "./delete";
+import { handleRequestGet } from "./get";
+import { handleRequestHead } from "./head";
+import { handleRequestMkcol } from "./mkcol";
 import { handleRequestMove } from "./move";
+import { handleRequestPropfind } from "./propfind";
+import { handleRequestPut } from "./put";
+import { RequestHandlerParams } from "./utils";
 
 async function handleRequestOptions() {
   return new Response(null, {
@@ -24,7 +25,7 @@ const HANDLERS: Record<
 > = {
   PROPFIND: handleRequestPropfind,
   MKCOL: handleRequestMkcol,
-  HEAD: handleRequestGet,
+  HEAD: handleRequestHead,
   GET: handleRequestGet,
   PUT: handleRequestPut,
   COPY: handleRequestCopy,
@@ -47,7 +48,7 @@ export const onRequest: PagesFunction<{
 
   if (!skipAuth) {
     if (!env.WEBDAV_USERNAME || !env.WEBDAV_PASSWORD)
-      return new Response("WebDAV not configured", { status: 500 });
+      return new Response("WebDAV protocol is not enabled", { status: 403 });
 
     const auth = request.headers.get("Authorization");
     if (!auth) {
