@@ -1,8 +1,10 @@
-import React, { forwardRef, useCallback } from "react";
+import React, { forwardRef, useCallback, useMemo } from "react";
 
 import { Button, Card, Drawer, Fab, Grid, Typography } from "@mui/material";
 import {
+  Camera as CameraIcon,
   CreateNewFolder as CreateNewFolderIcon,
+  Image as ImageIcon,
   Upload as UploadIcon,
 } from "@mui/icons-material";
 import { createFolder, processUploadQueue, uploadQueue } from "./app/transfer";
@@ -61,20 +63,39 @@ function UploadDrawer({
   cwd: string;
   onUpload: () => void;
 }) {
-  const handleUpload = useCallback(() => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.onchange = async () => {
-      if (!input.files) return;
-      const files = Array.from(input.files);
-      uploadQueue.push(...files.map((file) => ({ file, basedir: cwd })));
-      await processUploadQueue();
-      setOpen(false);
-      onUpload();
-    };
-    input.click();
-  }, [cwd, onUpload, setOpen]);
+  const handleUpload = useCallback(
+    (action: string) => () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      switch (action) {
+        case "photo":
+          input.accept = "image/*";
+          input.capture = "environment";
+          break;
+        case "image":
+          input.accept = "image/*,video/*";
+          break;
+        case "file":
+          input.accept = "*/*";
+          break;
+      }
+      input.multiple = true;
+      input.onchange = async () => {
+        if (!input.files) return;
+        const files = Array.from(input.files);
+        uploadQueue.push(...files.map((file) => ({ file, basedir: cwd })));
+        await processUploadQueue();
+        setOpen(false);
+        onUpload();
+      };
+      input.click();
+    },
+    [cwd, onUpload, setOpen]
+  );
+
+  const takePhoto = useMemo(() => handleUpload("photo"), [handleUpload]);
+  const uploadImage = useMemo(() => handleUpload("image"), [handleUpload]);
+  const uploadFile = useMemo(() => handleUpload("file"), [handleUpload]);
 
   return (
     <Drawer
@@ -87,9 +108,23 @@ function UploadDrawer({
         <Grid container spacing={2}>
           <Grid item xs={3}>
             <IconCaptionButton
+              icon={<CameraIcon fontSize="large" />}
+              caption="Camera"
+              onClick={takePhoto}
+            />
+          </Grid>
+          <Grid item xs={3}>
+            <IconCaptionButton
+              icon={<ImageIcon fontSize="large" />}
+              caption="Image/Video"
+              onClick={uploadImage}
+            />
+          </Grid>
+          <Grid item xs={3}>
+            <IconCaptionButton
               icon={<UploadIcon fontSize="large" />}
               caption="Upload"
-              onClick={handleUpload}
+              onClick={uploadFile}
             />
           </Grid>
           <Grid item xs={3}>
