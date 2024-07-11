@@ -12,7 +12,12 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import FileGrid, { encodeKey, FileItem, isDirectory } from "./FileGrid";
 import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
-import { copyPaste, fetchPath } from "./app/transfer";
+import {
+  copyPaste,
+  fetchPath,
+  processUploadQueue,
+  uploadQueue,
+} from "./app/transfer";
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -135,6 +140,11 @@ function Main({
           multiSelected={multiSelected}
           onMultiSelect={handleMultiSelect}
           emptyMessage={<Centered>No files or folders</Centered>}
+          onDropFiles={async (files) => {
+            uploadQueue.push(...files.map((file) => ({ file, basedir: cwd })));
+            await processUploadQueue();
+            fetchFiles();
+          }}
         />
       )}
       {multiSelected === null && (

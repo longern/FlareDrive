@@ -11,6 +11,7 @@ Free serverless backend with a limit of 100,000 invocation requests per day.
 - Search files
 - Image/video/PDF thumbnails
 - WebDAV endpoint
+- Drag and drop upload
 
 ## Usage
 
