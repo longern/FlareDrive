@@ -1,4 +1,4 @@
-import { notFound, parseBucketPath } from "@/utils/bucket";
+import { notFound, parseBucketPath } from "./utils";
 import { handleRequestCopy } from "./copy";
 import { handleRequestDelete } from "./delete";
 import { handleRequestGet } from "./get";
@@ -8,6 +8,7 @@ import { handleRequestMove } from "./move";
 import { handleRequestPropfind } from "./propfind";
 import { handleRequestPut } from "./put";
 import { RequestHandlerParams } from "./utils";
+import { handleRequestPost } from "./post";
 
 async function handleRequestOptions() {
   return new Response(null, {
@@ -27,6 +28,7 @@ const HANDLERS: Record<
   MKCOL: handleRequestMkcol,
   HEAD: handleRequestHead,
   GET: handleRequestGet,
+  POST: handleRequestPost,
   PUT: handleRequestPut,
   COPY: handleRequestCopy,
   MOVE: handleRequestMove,

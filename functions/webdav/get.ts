@@ -1,4 +1,4 @@
-import { notFound } from "@/utils/bucket";
+import { notFound } from "./utils";
 import { RequestHandlerParams } from "./utils";
 
 export async function handleRequestGet({

@@ -1,6 +1,6 @@
 import pLimit from "p-limit";
 
-import { notFound } from "@/utils/bucket";
+import { notFound } from "./utils";
 import { listAll, RequestHandlerParams, WEBDAV_ENDPOINT } from "./utils";
 
 export async function handleRequestCopy({

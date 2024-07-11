@@ -6,6 +6,21 @@ export interface RequestHandlerParams {
 
 export const WEBDAV_ENDPOINT = "/webdav/";
 
+export function notFound() {
+  return new Response("Not found", { status: 404 });
+}
+
+export function parseBucketPath(context: any): [R2Bucket, string] {
+  const { request, env, params } = context;
+  const url = new URL(request.url);
+
+  const pathSegments = (params.path || []) as String[];
+  const path = decodeURIComponent(pathSegments.join("/"));
+  const driveid = url.hostname.replace(/\..*/, "");
+
+  return [env[driveid] || env["BUCKET"], path];
+}
+
 export async function* listAll(
   bucket: R2Bucket,
   prefix?: string,

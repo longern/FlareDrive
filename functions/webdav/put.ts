@@ -1,10 +1,39 @@
 import { RequestHandlerParams, ROOT_OBJECT } from "./utils";
 
+async function handleRequestPutMultipart({
+  bucket,
+  path,
+  request,
+}: RequestHandlerParams) {
+  const url = new URL(request.url);
+
+  const uploadId = new URLSearchParams(url.search).get("uploadId");
+  const partNumberStr = new URLSearchParams(url.search).get("partNumber");
+  if (!uploadId || !partNumberStr || !request.body)
+    return new Response("Bad Request", { status: 400 });
+  const multipartUpload = bucket.resumeMultipartUpload(path, uploadId);
+
+  const partNumber = parseInt(partNumberStr);
+  const uploadedPart = await multipartUpload.uploadPart(
+    partNumber,
+    request.body
+  );
+
+  return new Response(null, {
+    headers: { "Content-Type": "application/json", etag: uploadedPart.etag },
+  });
+}
+
 export async function handleRequestPut({
   bucket,
   path,
   request,
 }: RequestHandlerParams) {
+  const searchParams = new URLSearchParams(new URL(request.url).search);
+  if (searchParams.has("uploadId")) {
+    return handleRequestPutMultipart({ bucket, path, request });
+  }
+
   if (request.url.endsWith("/")) {
     return new Response("Method Not Allowed", { status: 405 });
   }

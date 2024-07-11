@@ -6,7 +6,6 @@ Free serverless backend with a limit of 100,000 invocation requests per day.
 
 ## Features
 
-- Drag-and-drop upload
 - Upload large files
 - Create folders
 - Search files
@@ -26,23 +25,19 @@ Before starting, you should make sure that
 Steps:
 
 1. Fork this project and connect your fork with Cloudflare Pages
-2. Bind your R2 bucket to `BUCKET` varaible
-   - Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD` in `Settings`->`Functions`->`Environment Variables`
-   - (Optional) Set `WEBDAV_PUBLIC_READ` to enable public read access
+2. Setup environment variables
+   - Bind your R2 bucket to `BUCKET` variable
+   - Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD`
+   - (Optional) Set `WEBDAV_PUBLIC_READ` to `1` to enable public read
 3. Retry deployment in `Deployments` page to apply the changes
 4. (Optional) Add a custom domain
 
-### Authentication
+You can also deploy this project using Wrangler CLI:
 
-There is no built-in authentication support.
-By default everyone can read and write your storage.
-But Cloudflare Zero Trust can be used to protect your data.
-Do these steps to enable authentication:
-
-1. Enable Cloudflare Zero Trust
-2. In **Access**->**Applications**, create a self-hosted application
-3. Set **Path** as `api/write/` to disable public write or leave it blank to disable public read
-4. Create a policy which accepts your email only
+```bash
+npm run build
+npx wrangler pages deploy build
+```
 
 ### WebDAV endpoint
 

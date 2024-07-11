@@ -161,7 +161,7 @@ export async function multipartUpload(
   const headers = options?.headers || {};
   headers["content-type"] = file.type;
 
-  const uploadResponse = await fetch(`/api/write/items/${key}?uploads`, {
+  const uploadResponse = await fetch(`/webdav/${encodeKey(key)}?uploads`, {
     headers,
     method: "POST",
   });
@@ -177,7 +177,7 @@ export async function multipartUpload(
         partNumber: i.toString(),
         uploadId,
       });
-      const res = await xhrFetch(`/api/write/items/${key}?${searchParams}`, {
+      const res = await xhrFetch(`/webdav/${encodeKey(key)}?${searchParams}`, {
         method: "PUT",
         headers,
         body: chunk,
@@ -194,7 +194,7 @@ export async function multipartUpload(
   );
   const uploadedParts = await Promise.all(promises);
   const completeParams = new URLSearchParams({ uploadId });
-  await fetch(`/api/write/items/${key}?${completeParams}`, {
+  await fetch(`/webdav/${encodeKey(key)}?${completeParams}`, {
     method: "POST",
     body: JSON.stringify({ parts: uploadedParts }),
   });
