@@ -200,11 +200,15 @@ export async function multipartUpload(
   });
 }
 
-export async function copyPaste(source: string, target: string) {
-  const uploadUrl = `/api/write/items/${target}`;
+export async function copyPaste(source: string, target: string, move = false) {
+  const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(source)}`;
+  const destinationUrl = new URL(
+    `${WEBDAV_ENDPOINT}${encodeKey(target)}`,
+    window.location.href
+  );
   await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "x-amz-copy-source": encodeURIComponent(source) },
+    method: move ? "MOVE" : "COPY",
+    headers: { Destination: destinationUrl.href },
   });
 }
 
@@ -216,17 +220,10 @@ export async function createFolder(cwd: string) {
       window.alert("Invalid folder name");
       return;
     }
-    const uploadUrl = `/api/write/items/${cwd}${folderName}`;
-    await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": "application/x-directory" },
-    });
+    const folderKey = `${cwd}${folderName}`;
+    const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
+    await fetch(uploadUrl, { method: "MKCOL" });
   } catch (error) {
-    fetch("/api/write/")
-      .then((value) => {
-        if (value.redirected) window.location.href = value.url;
-      })
-      .catch(() => {});
     console.log(`Create folder failed`);
   }
 }
@@ -253,7 +250,7 @@ export async function processUploadQueue() {
       const thumbnailBlob = await generateThumbnail(file);
       const digestHex = await blobDigest(thumbnailBlob);
 
-      const thumbnailUploadUrl = `/api/write/items/_$flaredrive$/thumbnails/${digestHex}.png`;
+      const thumbnailUploadUrl = `/webdav/_$flaredrive$/thumbnails/${digestHex}.png`;
       try {
         await fetch(thumbnailUploadUrl, {
           method: "PUT",
@@ -261,11 +258,6 @@ export async function processUploadQueue() {
         });
         thumbnailDigest = digestHex;
       } catch (error) {
-        fetch("/api/write/")
-          .then((value) => {
-            if (value.redirected) window.location.href = value.url;
-          })
-          .catch(() => {});
         console.log(`Upload ${digestHex}.png failed`);
       }
     } catch (error) {
@@ -274,22 +266,15 @@ export async function processUploadQueue() {
   }
 
   try {
-    const uploadUrl = `/api/write/items/${basedir}${file.name}`;
     const headers: { "fd-thumbnail"?: string } = {};
     if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
     if (file.size >= SIZE_LIMIT) {
-      await multipartUpload(`${basedir}${file.name}`, file, {
-        headers,
-      });
+      await multipartUpload(basedir + file.name, file, { headers });
     } else {
+      const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(basedir + file.name)}`;
       await xhrFetch(uploadUrl, { method: "PUT", headers, body: file });
     }
   } catch (error) {
-    fetch("/api/write/")
-      .then((value) => {
-        if (value.redirected) window.location.href = value.url;
-      })
-      .catch(() => {});
     console.log(`Upload ${file.name} failed`, error);
   }
   setTimeout(processUploadQueue);

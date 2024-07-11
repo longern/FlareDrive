@@ -158,11 +158,9 @@ function Main({
         }}
         onRename={async () => {
           if (multiSelected?.length !== 1) return;
-          const key = multiSelected[0];
           const newName = window.prompt("Rename to:");
           if (!newName) return;
-          await copyPaste(key, `${cwd}${newName}`);
-          await fetch(`/api/write/items/${key}`, { method: "DELETE" });
+          await copyPaste(multiSelected[0], cwd + newName, true);
           fetchFiles();
         }}
         onDelete={async () => {

@@ -10,14 +10,20 @@ export async function handleRequestPut({
   }
 
   // Check if the parent directory exists
-  const parentPath = path.replace(/(\/|^)[^/]*$/, "");
-  const parentDir =
-    parentPath === "" ? ROOT_OBJECT : await bucket.head(parentPath);
-  if (parentDir === null) return new Response("Conflict", { status: 409 });
+  if (!path.startsWith("_$flaredrive$/")) {
+    const parentPath = path.replace(/(\/|^)[^/]*$/, "");
+    const parentDir =
+      parentPath === "" ? ROOT_OBJECT : await bucket.head(parentPath);
+    if (parentDir === null) return new Response("Conflict", { status: 409 });
+  }
+
+  const thumbnail = request.headers.get("fd-thumbnail");
+  const customMetadata = thumbnail ? { thumbnail } : undefined;
 
   const result = await bucket.put(path, request.body, {
     onlyIf: request.headers,
     httpMetadata: request.headers,
+    customMetadata,
   });
 
   if (!result) return new Response("Preconditions failed", { status: 412 });
