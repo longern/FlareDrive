@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import Header from "./Header";
 import Main from "./Main";
 import ProgressDialog from "./ProgressDialog";
+import { TransferQueueProvider } from "./app/transferQueue";
 
 const globalStyles = (
   <GlobalStyles styles={{ "html, body, #root": { height: "100%" } }} />
@@ -29,24 +30,26 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {globalStyles}
-      <Stack sx={{ height: "100%" }}>
-        <Header
-          search={search}
-          onSearchChange={(newSearch: string) => setSearch(newSearch)}
-          setShowProgressDialog={setShowProgressDialog}
+      <TransferQueueProvider>
+        <Stack sx={{ height: "100%" }}>
+          <Header
+            search={search}
+            onSearchChange={(newSearch: string) => setSearch(newSearch)}
+            setShowProgressDialog={setShowProgressDialog}
+          />
+          <Main search={search} onError={setError} />
+        </Stack>
+        <Snackbar
+          autoHideDuration={5000}
+          open={Boolean(error)}
+          message={error?.message}
+          onClose={() => setError(null)}
         />
-        <Main search={search} onError={setError} />
-      </Stack>
-      <Snackbar
-        autoHideDuration={5000}
-        open={Boolean(error)}
-        message={error?.message}
-        onClose={() => setError(null)}
-      />
-      <ProgressDialog
-        open={showProgressDialog}
-        onClose={() => setShowProgressDialog(false)}
-      />
+        <ProgressDialog
+          open={showProgressDialog}
+          onClose={() => setShowProgressDialog(false)}
+        />
+      </TransferQueueProvider>
     </ThemeProvider>
   );
 }

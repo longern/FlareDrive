@@ -12,12 +12,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import FileGrid, { encodeKey, FileItem, isDirectory } from "./FileGrid";
 import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
-import {
-  copyPaste,
-  fetchPath,
-  processUploadQueue,
-  uploadQueue,
-} from "./app/transfer";
+import { copyPaste, fetchPath } from "./app/transfer";
+import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -105,6 +101,7 @@ function DropZone({
       onDrop={(event) => {
         event.preventDefault();
         onDrop(event.dataTransfer.files);
+        setDragging(false);
       }}
     >
       {children}
@@ -124,6 +121,10 @@ function Main({
   const [loading, setLoading] = useState(true);
   const [multiSelected, setMultiSelected] = useState<string[] | null>(null);
   const [showUploadDrawer, setShowUploadDrawer] = useState(false);
+  const [lastUploadKey, setLastUploadKey] = useState<string | null>(null);
+
+  const transferQueue = useTransferQueue();
+  const uploadEnqueue = useUploadEnqueue();
 
   const fetchFiles = useCallback(() => {
     setLoading(true);
@@ -139,6 +140,19 @@ function Main({
   useEffect(() => {
     fetchFiles();
   }, [fetchFiles]);
+
+  useEffect(() => {
+    if (!transferQueue.length) return;
+    const lastFile = transferQueue[transferQueue.length - 1];
+    if (lastFile.loaded < lastFile.total) setLastUploadKey(lastFile.remoteKey);
+    else if (lastUploadKey) {
+      fetchPath(cwd).then((files) => {
+        setFiles(files);
+        setMultiSelected(null);
+      });
+      setLastUploadKey(null);
+    }
+  }, [cwd, fetchFiles, lastUploadKey, transferQueue]);
 
   const filteredFiles = useMemo(
     () =>
@@ -173,11 +187,9 @@ function Main({
       ) : (
         <DropZone
           onDrop={async (files) => {
-            uploadQueue.push(
+            uploadEnqueue(
               ...Array.from(files).map((file) => ({ file, basedir: cwd }))
             );
-            await processUploadQueue();
-            fetchFiles();
           }}
         >
           <FileGrid

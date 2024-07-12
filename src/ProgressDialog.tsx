@@ -1,5 +1,23 @@
-import { Dialog, DialogContent, DialogTitle, Tab, Tabs } from "@mui/material";
-import { useState } from "react";
+import {
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  List,
+  ListItem,
+  ListItemText,
+  Tab,
+  Tabs,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { useMemo, useState } from "react";
+import { TransferTask, useTransferQueue } from "./app/transferQueue";
+import { humanReadableSize } from "./app/utils";
+import {
+  CheckCircleOutline as CheckCircleOutlineIcon,
+  ErrorOutline as ErrorOutlineIcon,
+} from "@mui/icons-material";
 
 function ProgressDialog({
   open,
@@ -9,6 +27,14 @@ function ProgressDialog({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState(0);
+  const transferQueue: TransferTask[] = useTransferQueue();
+
+  const tasks = useMemo(() => {
+    const taskType = tab === 0 ? "download" : "upload";
+    return Object.values(transferQueue).filter(
+      (task) => task.type === taskType
+    );
+  }, [tab, transferQueue]);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
@@ -21,7 +47,41 @@ function ProgressDialog({
         <Tab label="Downloads" />
         <Tab label="Uploads" />
       </Tabs>
-      <DialogContent>{tab === 0 ? "Downloads" : "Uploads"}</DialogContent>
+      {tasks.length === 0 ? (
+        <DialogContent>
+          <Typography textAlign="center" color="text.secondary">
+            No tasks
+          </Typography>
+        </DialogContent>
+      ) : (
+        <DialogContent sx={{ padding: 0 }}>
+          <List>
+            {tasks.map((task) => (
+              <ListItem key={task.name}>
+                <ListItemText
+                  primary={task.name}
+                  secondary={`${humanReadableSize(
+                    task.loaded
+                  )} / ${humanReadableSize(task.total)}`}
+                />
+                {task.error ? (
+                  <Tooltip title={task.error.message}>
+                    <ErrorOutlineIcon color="error" />
+                  </Tooltip>
+                ) : task.loaded === 0 ? null : task.loaded === task.total ? (
+                  <CheckCircleOutlineIcon color="success" />
+                ) : (
+                  <CircularProgress
+                    variant="determinate"
+                    size={24}
+                    value={(task.loaded / task.total) * 100}
+                  />
+                )}
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+      )}
     </Dialog>
   );
 }

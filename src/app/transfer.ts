@@ -1,6 +1,7 @@
 import pLimit from "p-limit";
 
 import { encodeKey, FileItem } from "../FileGrid";
+import { TransferTask } from "./transferQueue";
 
 const WEBDAV_ENDPOINT = "/webdav/";
 
@@ -170,6 +171,7 @@ export async function multipartUpload(
 
   const limit = pLimit(2);
   const parts = Array.from({ length: totalChunks }, (_, i) => i + 1);
+  const partsLoaded = Array.from({ length: totalChunks + 1 }, () => 0);
   const promises = parts.map((i) =>
     limit(async () => {
       const chunk = file.slice((i - 1) * SIZE_LIMIT, i * SIZE_LIMIT);
@@ -177,27 +179,44 @@ export async function multipartUpload(
         partNumber: i.toString(),
         uploadId,
       });
-      const res = await xhrFetch(`/webdav/${encodeKey(key)}?${searchParams}`, {
-        method: "PUT",
-        headers,
-        body: chunk,
-        onUploadProgress: (progressEvent) => {
-          if (typeof options?.onUploadProgress !== "function") return;
-          options.onUploadProgress({
-            loaded: (i - 1) * SIZE_LIMIT + progressEvent.loaded,
-            total: file.size,
-          });
-        },
-      });
-      return { partNumber: i, etag: res.headers.get("etag")! };
+      const uploadUrl = `/webdav/${encodeKey(key)}?${searchParams}`;
+      if (i === limit.concurrency)
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const uploadPart = () =>
+        xhrFetch(uploadUrl, {
+          method: "PUT",
+          headers,
+          body: chunk,
+          onUploadProgress: (progressEvent) => {
+            partsLoaded[i] = progressEvent.loaded;
+            options?.onUploadProgress?.({
+              loaded: partsLoaded.reduce((a, b) => a + b),
+              total: file.size,
+            });
+          },
+        });
+
+      const retryReducer = (acc: Promise<Response>) =>
+        acc
+          .then((res) => {
+            const retryAfter = res.headers.get("retry-after");
+            if (!retryAfter) return res;
+            return uploadPart();
+          })
+          .catch(uploadPart);
+      const response = await [1, 2].reduce(retryReducer, uploadPart());
+      return { partNumber: i, etag: response.headers.get("etag")! };
     })
   );
   const uploadedParts = await Promise.all(promises);
   const completeParams = new URLSearchParams({ uploadId });
-  await fetch(`/webdav/${encodeKey(key)}?${completeParams}`, {
+  const response = await fetch(`/webdav/${encodeKey(key)}?${completeParams}`, {
     method: "POST",
     body: JSON.stringify({ parts: uploadedParts }),
   });
+  if (!response.ok) throw new Error(await response.text());
+  return response;
 }
 
 export async function copyPaste(source: string, target: string, move = false) {
@@ -228,17 +247,15 @@ export async function createFolder(cwd: string) {
   }
 }
 
-export const uploadQueue: {
-  basedir: string;
-  file: File;
-}[] = [];
-
-export async function processUploadQueue() {
-  if (!uploadQueue.length) {
-    return;
-  }
-
-  const { basedir, file } = uploadQueue.shift()!;
+export async function processTransferTask({
+  task,
+  onTaskProgress,
+}: {
+  task: TransferTask;
+  onTaskProgress?: (event: { loaded: number; total: number }) => void;
+}) {
+  const { remoteKey, file } = task;
+  if (task.type !== "upload" || !file) return;
   let thumbnailDigest = null;
 
   if (
@@ -265,17 +282,20 @@ export async function processUploadQueue() {
     }
   }
 
-  try {
-    const headers: { "fd-thumbnail"?: string } = {};
-    if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
-    if (file.size >= SIZE_LIMIT) {
-      await multipartUpload(basedir + file.name, file, { headers });
-    } else {
-      const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(basedir + file.name)}`;
-      await xhrFetch(uploadUrl, { method: "PUT", headers, body: file });
-    }
-  } catch (error) {
-    console.log(`Upload ${file.name} failed`, error);
+  const headers: { "fd-thumbnail"?: string } = {};
+  if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
+  if (file.size >= SIZE_LIMIT) {
+    return await multipartUpload(remoteKey, file, {
+      headers,
+      onUploadProgress: onTaskProgress,
+    });
+  } else {
+    const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(remoteKey)}`;
+    await xhrFetch(uploadUrl, {
+      method: "PUT",
+      headers,
+      body: file,
+      onUploadProgress: onTaskProgress,
+    });
   }
-  setTimeout(processUploadQueue);
 }

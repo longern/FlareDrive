@@ -7,6 +7,7 @@ import {
   ListItemText,
 } from "@mui/material";
 import MimeIcon from "./MimeIcon";
+import { humanReadableSize } from "./app/utils";
 
 export interface FileItem {
   key: string;
@@ -14,16 +15,6 @@ export interface FileItem {
   uploaded: string;
   httpMetadata: { contentType: string };
   customMetadata?: { thumbnail?: string };
-}
-
-function humanReadableSize(size: number) {
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let i = 0;
-  while (size >= 1024) {
-    size /= 1024;
-    i++;
-  }
-  return `${size.toFixed(1)} ${units[i]}`;
 }
 
 function extractFilename(key: string) {

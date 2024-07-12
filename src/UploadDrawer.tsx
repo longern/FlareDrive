@@ -7,7 +7,8 @@ import {
   Image as ImageIcon,
   Upload as UploadIcon,
 } from "@mui/icons-material";
-import { createFolder, processUploadQueue, uploadQueue } from "./app/transfer";
+import { createFolder } from "./app/transfer";
+import { useUploadEnqueue } from "./app/transferQueue";
 
 function IconCaptionButton({
   icon,
@@ -64,6 +65,8 @@ function UploadDrawer({
   cwd: string;
   onUpload: () => void;
 }) {
+  const uploadEnqueue = useUploadEnqueue();
+
   const handleUpload = useCallback(
     (action: string) => () => {
       const input = document.createElement("input");
@@ -84,14 +87,13 @@ function UploadDrawer({
       input.onchange = async () => {
         if (!input.files) return;
         const files = Array.from(input.files);
-        uploadQueue.push(...files.map((file) => ({ file, basedir: cwd })));
-        await processUploadQueue();
+        uploadEnqueue(...files.map((file) => ({ file, basedir: cwd })));
         setOpen(false);
         onUpload();
       };
       input.click();
     },
-    [cwd, onUpload, setOpen]
+    [cwd, onUpload, setOpen, uploadEnqueue]
   );
 
   const takePhoto = useMemo(() => handleUpload("photo"), [handleUpload]);
