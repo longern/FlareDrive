@@ -26,10 +26,10 @@ Before starting, you should make sure that
 Steps:
 
 1. Fork this project and connect your fork with Cloudflare Pages
-2. Setup environment variables
-   - Bind your R2 bucket to `BUCKET` variable
+   - Select `Create React App` framework preset
    - Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD`
    - (Optional) Set `WEBDAV_PUBLIC_READ` to `1` to enable public read
+2. After initial deployment, bind your R2 bucket to `BUCKET` variable
 3. Retry deployment in `Deployments` page to apply the changes
 4. (Optional) Add a custom domain
 
