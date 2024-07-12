@@ -28,6 +28,7 @@ function Header({
         }}
       />
       <IconButton
+        aria-label="More"
         color="inherit"
         sx={{ marginLeft: 0.5 }}
         onClick={(e) => setAnchorEl(e.currentTarget)}

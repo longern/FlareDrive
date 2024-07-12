@@ -40,6 +40,7 @@ export const UploadFab = forwardRef<HTMLButtonElement, { onClick: () => void }>(
     return (
       <Fab
         ref={ref}
+        aria-label="Upload"
         variant="circular"
         color="primary"
         size="large"
