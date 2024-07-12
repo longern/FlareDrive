@@ -44,32 +44,17 @@ function FileGrid({
   multiSelected,
   onMultiSelect,
   emptyMessage,
-  onDropFiles,
 }: {
   files: FileItem[];
   onCwdChange: (newCwd: string) => void;
   multiSelected: string[] | null;
   onMultiSelect: (key: string) => void;
   emptyMessage?: React.ReactNode;
-  onDropFiles?: (files: File[]) => void;
 }) {
   return files.length === 0 ? (
     emptyMessage
   ) : (
-    <Grid
-      container
-      sx={{ overflowY: "auto", paddingBottom: "48px" }}
-      onDragEnter={(event) => event.preventDefault()}
-      onDragOver={(event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        const files = Array.from(event.dataTransfer.files);
-        onDropFiles?.(files);
-      }}
-    >
+    <Grid container sx={{ paddingBottom: "48px" }}>
       {files.map((file) => (
         <Grid item key={file.key} xs={12} sm={6} md={4} lg={3} xl={2}>
           <ListItemButton

@@ -75,6 +75,43 @@ function PathBreadcrumb({
   );
 }
 
+function DropZone({
+  children,
+  onDrop,
+}: {
+  children: React.ReactNode;
+  onDrop: (files: FileList) => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+
+  return (
+    <Box
+      sx={{
+        flexGrow: 1,
+        overflowY: "auto",
+        backgroundColor: (theme) => theme.palette.background.default,
+        filter: dragging ? "brightness(0.9)" : "none",
+        transition: "filter 0.2s",
+      }}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        setDragging(true);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        onDrop(event.dataTransfer.files);
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
 function Main({
   search,
   onError,
@@ -134,18 +171,23 @@ function Main({
           <CircularProgress />
         </Centered>
       ) : (
-        <FileGrid
-          files={filteredFiles}
-          onCwdChange={(newCwd: string) => setCwd(newCwd)}
-          multiSelected={multiSelected}
-          onMultiSelect={handleMultiSelect}
-          emptyMessage={<Centered>No files or folders</Centered>}
-          onDropFiles={async (files) => {
-            uploadQueue.push(...files.map((file) => ({ file, basedir: cwd })));
+        <DropZone
+          onDrop={async (files) => {
+            uploadQueue.push(
+              ...Array.from(files).map((file) => ({ file, basedir: cwd }))
+            );
             await processUploadQueue();
             fetchFiles();
           }}
-        />
+        >
+          <FileGrid
+            files={filteredFiles}
+            onCwdChange={(newCwd: string) => setCwd(newCwd)}
+            multiSelected={multiSelected}
+            onMultiSelect={handleMultiSelect}
+            emptyMessage={<Centered>No files or folders</Centered>}
+          />
+        </DropZone>
       )}
       {multiSelected === null && (
         <UploadFab onClick={() => setShowUploadDrawer(true)} />
