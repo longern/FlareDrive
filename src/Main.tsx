@@ -144,7 +144,8 @@ function Main({
   useEffect(() => {
     if (!transferQueue.length) return;
     const lastFile = transferQueue[transferQueue.length - 1];
-    if (lastFile.loaded < lastFile.total) setLastUploadKey(lastFile.remoteKey);
+    if (["pending", "in-progress"].includes(lastFile.status))
+      setLastUploadKey(lastFile.remoteKey);
     else if (lastUploadKey) {
       fetchPath(cwd).then((files) => {
         setFiles(files);

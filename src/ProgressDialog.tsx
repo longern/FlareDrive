@@ -64,19 +64,19 @@ function ProgressDialog({
                     task.loaded
                   )} / ${humanReadableSize(task.total)}`}
                 />
-                {task.error ? (
+                {task.status === "failed" ? (
                   <Tooltip title={task.error.message}>
                     <ErrorOutlineIcon color="error" />
                   </Tooltip>
-                ) : task.loaded === 0 ? null : task.loaded === task.total ? (
+                ) : task.status === "completed" ? (
                   <CheckCircleOutlineIcon color="success" />
-                ) : (
+                ) : task.status === "in-progress" ? (
                   <CircularProgress
                     variant="determinate"
                     size={24}
                     value={(task.loaded / task.total) * 100}
                   />
-                )}
+                ) : null}
               </ListItem>
             ))}
           </List>

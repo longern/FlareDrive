@@ -9,6 +9,7 @@ import { processTransferTask } from "./transfer";
 
 export interface TransferTask {
   type: "upload" | "download";
+  status: "pending" | "in-progress" | "completed" | "failed";
   remoteKey: string;
   file?: File;
   name: string;
@@ -33,6 +34,7 @@ export function useUploadEnqueue() {
       ({ basedir, file }) =>
         ({
           type: "upload",
+          status: "pending",
           name: file.name,
           file,
           remoteKey: basedir + file.name,
@@ -52,39 +54,40 @@ export function TransferQueueProvider({
   const [transferTasks, setTransferTasks] = useState<TransferTask[]>([]);
   const taskProcessing = useRef<TransferTask | null>(null);
 
+  function currentTaskUpdater(props: Partial<TransferTask>) {
+    const currentTask = taskProcessing.current!;
+    return (tasks: TransferTask[]) => {
+      const newTask: TransferTask = { ...currentTask, ...props };
+      const newTasks = tasks.map((t) =>
+        t === taskProcessing.current ? newTask : t
+      );
+      if (currentTask === taskProcessing.current)
+        taskProcessing.current = newTask;
+      return newTasks;
+    };
+  }
+
   useEffect(() => {
-    const taskToProcess = transferTasks.find((task) => task.loaded === 0);
+    const taskToProcess = transferTasks.find(
+      (task) => task.status === "pending"
+    );
     if (!taskToProcess || taskProcessing.current) return;
     taskProcessing.current = taskToProcess;
+
+    setTransferTasks(currentTaskUpdater({ status: "in-progress" }));
+
     processTransferTask({
       task: taskToProcess,
       onTaskProgress: ({ loaded }) => {
-        setTransferTasks((tasks) => {
-          const newTask: TransferTask = { ...taskProcessing.current!, loaded };
-          const newTasks = tasks.map((t) =>
-            t === taskProcessing.current ? newTask : t
-          );
-          taskProcessing.current = newTask;
-          return newTasks;
-        });
+        setTransferTasks(currentTaskUpdater({ loaded }));
       },
     })
       .then(() => {
+        setTransferTasks(currentTaskUpdater({ status: "completed" }));
         taskProcessing.current = null;
-        setTransferTasks((tasks) => [...tasks]);
       })
       .catch((error) => {
-        setTransferTasks((tasks) => {
-          const newTask: TransferTask = {
-            ...taskProcessing.current!,
-            error,
-          } as TransferTask;
-          const newTasks = tasks.map((t) =>
-            t === taskProcessing.current ? newTask : t
-          );
-          taskProcessing.current = newTask;
-          return newTasks;
-        });
+        setTransferTasks(currentTaskUpdater({ status: "failed", error }));
       });
   }, [transferTasks]);
 

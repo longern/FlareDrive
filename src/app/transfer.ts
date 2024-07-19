@@ -255,7 +255,7 @@ export async function processTransferTask({
   onTaskProgress?: (event: { loaded: number; total: number }) => void;
 }) {
   const { remoteKey, file } = task;
-  if (task.type !== "upload" || !file) return;
+  if (task.type !== "upload" || !file) throw new Error("Invalid task");
   let thumbnailDigest = null;
 
   if (
@@ -291,7 +291,7 @@ export async function processTransferTask({
     });
   } else {
     const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(remoteKey)}`;
-    await xhrFetch(uploadUrl, {
+    return await xhrFetch(uploadUrl, {
       method: "PUT",
       headers,
       body: file,
