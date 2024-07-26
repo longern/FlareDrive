@@ -127,7 +127,6 @@ function Main({
   const uploadEnqueue = useUploadEnqueue();
 
   const fetchFiles = useCallback(() => {
-    setLoading(true);
     fetchPath(cwd)
       .then((files) => {
         setFiles(files);
@@ -136,6 +135,8 @@ function Main({
       .catch(onError)
       .finally(() => setLoading(false));
   }, [cwd, onError]);
+
+  useEffect(() => setLoading(true), [cwd]);
 
   useEffect(() => {
     fetchFiles();
@@ -147,10 +148,7 @@ function Main({
     if (["pending", "in-progress"].includes(lastFile.status))
       setLastUploadKey(lastFile.remoteKey);
     else if (lastUploadKey) {
-      fetchPath(cwd).then((files) => {
-        setFiles(files);
-        setMultiSelected(null);
-      });
+      fetchFiles();
       setLastUploadKey(null);
     }
   }, [cwd, fetchFiles, lastUploadKey, transferQueue]);
