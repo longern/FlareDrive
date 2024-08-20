@@ -42,7 +42,7 @@ npx wrangler pages deploy build
 
 ### WebDAV endpoint
 
-You can use any client (such as [BD File Manager](https://play.google.com/store/apps/details?id=com.liuzho.file.explorer))
+You can use any client (such as [Cx File Explorer](https://play.google.com/store/apps/details?id=com.cxinventor.file.explorer), [BD File Manager](https://play.google.com/store/apps/details?id=com.liuzho.file.explorer))
 that supports the WebDAV protocol to access your files.
 Fill the endpoint URL as `https://<your-domain.com>/webdav` and use the username and password you set.
 
