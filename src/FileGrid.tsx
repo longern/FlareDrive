@@ -49,24 +49,24 @@ function FileGrid({
       {files.map((file) => (
         <Grid item key={file.key} xs={12} sm={6} md={4} lg={3} xl={2}>
           <ListItemButton
-            component="a"
-            href={`/webdav/${encodeKey(file.key)}`}
-            target="_blank"
-            rel="noopener noreferrer"
             selected={multiSelected?.includes(file.key)}
-            onClick={(event) => {
+            onClick={() => {
               if (multiSelected !== null) {
                 onMultiSelect(file.key);
-                event.preventDefault();
               } else if (isDirectory(file)) {
                 onCwdChange(file.key + "/");
-                event.preventDefault();
-              }
+              } else
+                window.open(
+                  `/webdav/${encodeKey(file.key)}`,
+                  "_blank",
+                  "noopener,noreferrer"
+                );
             }}
             onContextMenu={(e) => {
               e.preventDefault();
               onMultiSelect(file.key);
             }}
+            sx={{ userSelect: "none" }}
           >
             <ListItemIcon>
               {file.customMetadata?.thumbnail ? (
