@@ -66,6 +66,7 @@ function FileGrid({
             onContextMenu={(e) => {
               e.preventDefault();
               onMultiSelect(file.key);
+              return false;
             }}
           >
             <ListItemIcon>
