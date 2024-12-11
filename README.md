@@ -26,7 +26,7 @@ Before starting, you should make sure that
 Steps:
 
 1. Fork this project and connect your fork with Cloudflare Pages
-   - Select `Create React App` framework preset
+   - Select `Docusaurus` framework preset
    - Set `WEBDAV_USERNAME` and `WEBDAV_PASSWORD`
    - (Optional) Set `WEBDAV_PUBLIC_READ` to `1` to enable public read
 2. After initial deployment, bind your R2 bucket to `BUCKET` variable
