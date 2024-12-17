@@ -237,6 +237,14 @@ function Main({
             await fetch(`/webdav/${encodeKey(key)}`, { method: "DELETE" });
           fetchFiles();
         }}
+        onShare={() => {
+          if (multiSelected?.length !== 1) return;
+          const url = new URL(
+            `/webdav/${encodeKey(multiSelected[0])}`,
+            window.location.href
+          );
+          navigator.share({ url: url.toString() });
+        }}
       />
     </React.Fragment>
   );
