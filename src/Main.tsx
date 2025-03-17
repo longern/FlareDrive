@@ -1,3 +1,4 @@
+// Main.tsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -44,10 +45,7 @@ function PathBreadcrumb({
 
   return (
     <Breadcrumbs separator="›" sx={{ padding: 1 }}>
-      <Button
-        onClick={() => onCwdChange("")}
-        sx={{ minWidth: 0, padding: 0 }}
-      >
+      <Button onClick={() => onCwdChange("")} sx={{ minWidth: 0, padding: 0 }}>
         <HomeIcon />
       </Button>
       {parts.map((part, index) =>
@@ -148,9 +146,9 @@ function Main({
   useEffect(() => {
     if (!transferQueue.length) return;
     const lastFile = transferQueue[transferQueue.length - 1];
-    if (["pending", "in-progress"].includes(lastFile.status))
+    if (["pending", "in-progress"].includes(lastFile.status)) {
       setLastUploadKey(lastFile.remoteKey);
-    else if (lastUploadKey) {
+    } else if (lastUploadKey) {
       fetchFiles();
       setLastUploadKey(null);
     }
@@ -188,7 +186,7 @@ function Main({
         </Centered>
       ) : (
         <DropZone
-          onDrop={async (files) => {
+          onDrop={(files) => {
             uploadEnqueue(
               ...Array.from(files).map((file) => ({ file, basedir: cwd }))
             );
@@ -234,6 +232,7 @@ function Main({
         open={showTextPadDrawer}
         setOpen={setShowTextPadDrawer}
         cwd={cwd}
+        onUpload={fetchFiles}
       />
 
       <MultiSelectToolbar
