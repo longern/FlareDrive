@@ -1,4 +1,4 @@
-import { Home as HomeIcon } from "@mui/icons-material";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Breadcrumbs,
@@ -7,14 +7,16 @@ import {
   Link,
   Typography,
 } from "@mui/material";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Home as HomeIcon, NoteAdd as NoteAddIcon } from "@mui/icons-material";
 
 import FileGrid, { encodeKey, FileItem, isDirectory } from "./FileGrid";
 import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
+import TextPadDrawer from "./TextPadDrawer";
 import { copyPaste, fetchPath } from "./app/transfer";
 import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
 
+// Centered helper
 function Centered({ children }: { children: React.ReactNode }) {
   return (
     <Box
@@ -30,6 +32,7 @@ function Centered({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Breadcrumb component
 function PathBreadcrumb({
   path,
   onCwdChange,
@@ -43,10 +46,7 @@ function PathBreadcrumb({
     <Breadcrumbs separator="›" sx={{ padding: 1 }}>
       <Button
         onClick={() => onCwdChange("")}
-        sx={{
-          minWidth: 0,
-          padding: 0,
-        }}
+        sx={{ minWidth: 0, padding: 0 }}
       >
         <HomeIcon />
       </Button>
@@ -71,6 +71,7 @@ function PathBreadcrumb({
   );
 }
 
+// DropZone wrapper
 function DropZone({
   children,
   onDrop,
@@ -89,18 +90,18 @@ function DropZone({
         filter: dragging ? "brightness(0.9)" : "none",
         transition: "filter 0.2s",
       }}
-      onDragEnter={(event) => {
-        event.preventDefault();
+      onDragEnter={(e) => {
+        e.preventDefault();
         setDragging(true);
       }}
-      onDragOver={(event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
       }}
       onDragLeave={() => setDragging(false)}
-      onDrop={(event) => {
-        event.preventDefault();
-        onDrop(event.dataTransfer.files);
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop(e.dataTransfer.files);
         setDragging(false);
       }}
     >
@@ -109,6 +110,7 @@ function DropZone({
   );
 }
 
+// Main Component
 function Main({
   search,
   onError,
@@ -116,11 +118,12 @@ function Main({
   search: string;
   onError: (error: Error) => void;
 }) {
-  const [cwd, setCwd] = React.useState("");
+  const [cwd, setCwd] = useState("");
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [multiSelected, setMultiSelected] = useState<string[] | null>(null);
   const [showUploadDrawer, setShowUploadDrawer] = useState(false);
+  const [showTextPadDrawer, setShowTextPadDrawer] = useState(false);
   const [lastUploadKey, setLastUploadKey] = useState<string | null>(null);
 
   const transferQueue = useTransferQueue();
@@ -165,20 +168,20 @@ function Main({
   );
 
   const handleMultiSelect = useCallback((key: string) => {
-    setMultiSelected((multiSelected) => {
-      if (multiSelected === null) {
-        return [key];
-      } else if (multiSelected.includes(key)) {
-        const newSelected = multiSelected.filter((k) => k !== key);
-        return newSelected.length ? newSelected : null;
+    setMultiSelected((prev) => {
+      if (prev === null) return [key];
+      if (prev.includes(key)) {
+        const updated = prev.filter((k) => k !== key);
+        return updated.length ? updated : null;
       }
-      return [...multiSelected, key];
+      return [...prev, key];
     });
   }, []);
 
   return (
-    <React.Fragment>
+    <>
       {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
+
       {loading ? (
         <Centered>
           <CircularProgress />
@@ -200,15 +203,39 @@ function Main({
           />
         </DropZone>
       )}
+
       {multiSelected === null && (
-        <UploadFab onClick={() => setShowUploadDrawer(true)} />
+        <>
+          <UploadFab onClick={() => setShowUploadDrawer(true)} />
+          <Button
+            variant="contained"
+            startIcon={<NoteAddIcon />}
+            sx={{
+              position: "fixed",
+              bottom: 90,
+              right: 24,
+              zIndex: 999,
+            }}
+            onClick={() => setShowTextPadDrawer(true)}
+          >
+            Open TextPad
+          </Button>
+        </>
       )}
+
       <UploadDrawer
         open={showUploadDrawer}
         setOpen={setShowUploadDrawer}
         cwd={cwd}
         onUpload={fetchFiles}
       />
+
+      <TextPadDrawer
+        open={showTextPadDrawer}
+        setOpen={setShowTextPadDrawer}
+        cwd={cwd}
+      />
+
       <MultiSelectToolbar
         multiSelected={multiSelected}
         onClose={() => setMultiSelected(null)}
@@ -246,7 +273,7 @@ function Main({
           navigator.share({ url: url.toString() });
         }}
       />
-    </React.Fragment>
+    </>
   );
 }
 
