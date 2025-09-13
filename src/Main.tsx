@@ -19,6 +19,16 @@ import {
   uploadQueue,
 } from "./app/transfer";
 
+function getAuthHeaders(): Record<string, string> {
+  const credentials = localStorage.getItem('flaredrive_auth');
+  if (credentials) {
+    return {
+      'Authorization': `Basic ${credentials}`
+    };
+  }
+  return {};
+}
+
 function Centered({ children }: { children: React.ReactNode }) {
   return (
     <Box
@@ -223,7 +233,7 @@ function Main({
           const confirmMessage = "Delete the following file(s) permanently?";
           if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
           for (const key of multiSelected)
-            await fetch(`/file/${encodeKey(key)}`, { method: "DELETE" });
+            await fetch(`/file/${encodeKey(key)}`, { method: "DELETE", headers: getAuthHeaders() });
           fetchFiles();
         }}
       />

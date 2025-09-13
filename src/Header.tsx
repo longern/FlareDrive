@@ -1,6 +1,7 @@
-import { IconButton, InputBase, Menu, MenuItem, Toolbar } from "@mui/material";
+import { IconButton, InputBase, Menu, MenuItem, Toolbar, Box } from "@mui/material";
 import { useState } from "react";
 import { MoreHoriz as MoreHorizIcon } from "@mui/icons-material";
+import LogoutButton from "./LogoutButton";
 
 function Header({
   search,
@@ -27,7 +28,9 @@ function Header({
           padding: "8px 16px",
         }}
       />
-      <IconButton
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <LogoutButton variant="icon" />
+        <IconButton
         aria-label="More"
         color="inherit"
         sx={{ marginLeft: 0.5 }}
@@ -51,6 +54,7 @@ function Header({
           Progress
         </MenuItem>
       </Menu>
+      </Box>
     </Toolbar>
   );
 }

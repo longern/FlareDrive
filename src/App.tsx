@@ -11,6 +11,8 @@ import React, { useState } from "react";
 import Header from "./Header";
 import Main from "./Main";
 import ProgressDialog from "./ProgressDialog";
+import Login from "./Login";
+import { AuthProvider, useAuth } from "./AuthContext";
 
 const globalStyles = (
   <GlobalStyles styles={{ "html, body, #root": { height: "100%" } }} />
@@ -20,15 +22,18 @@ const theme = createTheme({
   palette: { primary: { main: "#f38020" } },
 });
 
-function App() {
+function AppContent() {
+  const { isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
   const [showProgressDialog, setShowProgressDialog] = React.useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {globalStyles}
+    <React.Fragment>
       <Stack sx={{ height: "100%" }}>
         <Header
           search={search}
@@ -47,7 +52,19 @@ function App() {
         open={showProgressDialog}
         onClose={() => setShowProgressDialog(false)}
       />
-    </ThemeProvider>
+    </React.Fragment>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {globalStyles}
+        <AppContent />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

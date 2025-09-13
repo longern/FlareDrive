@@ -4,10 +4,25 @@ import { encodeKey, FileItem } from "../FileGrid";
 
 const WEBDAV_ENDPOINT = "/file/";
 
+function getAuthHeaders(): Record<string, string> {
+  const credentials = localStorage.getItem('flaredrive_auth');
+  if (credentials) {
+    return {
+      'Authorization': `Basic ${credentials}`
+    };
+  }
+  return {};
+}
+
 export async function fetchPath(path: string) {
+  const headers: Record<string, string> = {
+    Depth: "1",
+    ...getAuthHeaders()
+  };
+  
   const res = await fetch(`${WEBDAV_ENDPOINT}${encodeKey(path)}`, {
     method: "PROPFIND",
-    headers: { Depth: "1" },
+    headers,
   });
 
   if (!res.ok) throw new Error("Failed to fetch");
@@ -158,7 +173,7 @@ export async function multipartUpload(
     }) => void;
   }
 ) {
-  const headers = options?.headers || {};
+  const headers = { ...getAuthHeaders(), ...(options?.headers || {}) };
   headers["content-type"] = file.type;
 
   const uploadResponse = await fetch(`/file/${encodeKey(key)}?uploads`, {
@@ -179,7 +194,7 @@ export async function multipartUpload(
       });
       const res = await xhrFetch(`/file/${encodeKey(key)}?${searchParams}`, {
         method: "PUT",
-        headers,
+        headers: { ...headers, ...getAuthHeaders() },
         body: chunk,
         onUploadProgress: (progressEvent) => {
           if (typeof options?.onUploadProgress !== "function") return;
@@ -196,6 +211,7 @@ export async function multipartUpload(
   const completeParams = new URLSearchParams({ uploadId });
   await fetch(`/file/${encodeKey(key)}?${completeParams}`, {
     method: "POST",
+    headers: getAuthHeaders(),
     body: JSON.stringify({ parts: uploadedParts }),
   });
 }
@@ -208,7 +224,7 @@ export async function copyPaste(source: string, target: string, move = false) {
   );
   await fetch(uploadUrl, {
     method: move ? "MOVE" : "COPY",
-    headers: { Destination: destinationUrl.href },
+    headers: { Destination: destinationUrl.href, ...getAuthHeaders() },
   });
 }
 
@@ -222,7 +238,7 @@ export async function createFolder(cwd: string) {
     }
     const folderKey = `${cwd}${folderName}`;
     const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
-    await fetch(uploadUrl, { method: "MKCOL" });
+    await fetch(uploadUrl, { method: "MKCOL", headers: getAuthHeaders() });
   } catch (error) {
     console.log(`Create folder failed`);
   }
@@ -254,6 +270,7 @@ export async function processUploadQueue() {
       try {
         await fetch(thumbnailUploadUrl, {
           method: "PUT",
+          headers: getAuthHeaders(),
           body: thumbnailBlob,
         });
         thumbnailDigest = digestHex;
@@ -272,7 +289,7 @@ export async function processUploadQueue() {
       await multipartUpload(basedir + file.name, file, { headers });
     } else {
       const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(basedir + file.name)}`;
-      await xhrFetch(uploadUrl, { method: "PUT", headers, body: file });
+      await xhrFetch(uploadUrl, { method: "PUT", headers: { ...headers, ...getAuthHeaders() }, body: file });
     }
   } catch (error) {
     console.log(`Upload ${file.name} failed`, error);

@@ -46,7 +46,7 @@ export const onRequest: PagesFunction<{
 
   const skipAuth =
     env.WEBDAV_PUBLIC_READ &&
-    ["GET", "HEAD", "PROPFIND"].includes(request.method);
+    ["GET", "HEAD"].includes(request.method);
 
   if (!skipAuth) {
     if (!env.WEBDAV_USERNAME || !env.WEBDAV_PASSWORD)
