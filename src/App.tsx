@@ -10,7 +10,6 @@ import React, { useState } from "react";
 
 import Header from "./Header";
 import Main from "./Main";
-import ProgressDialog from "./ProgressDialog";
 import Login from "./Login";
 import { AuthProvider, useAuth } from "./AuthContext";
 
@@ -25,8 +24,11 @@ const theme = createTheme({
 function AppContent() {
   const { isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
-  const [showProgressDialog, setShowProgressDialog] = React.useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [fileStats, setFileStats] = useState<{ total: number; filtered: number }>({ total: 0, filtered: 0 });
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name');
+  const [useFuzzySearch, setUseFuzzySearch] = useState(true);
 
   if (!isAuthenticated) {
     return <Login />;
@@ -38,19 +40,29 @@ function AppContent() {
         <Header
           search={search}
           onSearchChange={(newSearch: string) => setSearch(newSearch)}
-          setShowProgressDialog={setShowProgressDialog}
+          totalFiles={fileStats.total}
+          filteredCount={fileStats.filtered}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          sortBy={sortBy}
+          onSortByChange={setSortBy}
+          useFuzzySearch={useFuzzySearch}
+          onFuzzySearchChange={setUseFuzzySearch}
         />
-        <Main search={search} onError={setError} />
+        <Main 
+          search={search} 
+          onError={setError} 
+          onFileStatsChange={setFileStats}
+          viewMode={viewMode}
+          sortBy={sortBy}
+          useFuzzySearch={useFuzzySearch}
+        />
       </Stack>
       <Snackbar
         autoHideDuration={5000}
         open={Boolean(error)}
         message={error?.message}
         onClose={() => setError(null)}
-      />
-      <ProgressDialog
-        open={showProgressDialog}
-        onClose={() => setShowProgressDialog(false)}
       />
     </React.Fragment>
   );

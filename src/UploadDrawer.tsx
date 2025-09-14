@@ -58,11 +58,13 @@ function UploadDrawer({
   setOpen,
   cwd,
   onUpload,
+  uploadManager,
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
   cwd: string;
   onUpload: () => void;
+  uploadManager?: any;
 }) {
   const handleUpload = useCallback(
     (action: string) => () => {
@@ -83,15 +85,33 @@ function UploadDrawer({
       input.multiple = true;
       input.onchange = async () => {
         if (!input.files) return;
+        
+        if (!uploadManager) {
+          console.error('Upload manager not available');
+          return;
+        }
+        
         const files = Array.from(input.files);
-        uploadQueue.push(...files.map((file) => ({ file, basedir: cwd })));
-        await processUploadQueue();
+        files.forEach((file) => {
+          const uploadId = uploadManager.addUpload(file);
+          const upload = uploadManager.getUpload(uploadId);
+          console.log('Added upload from drawer:', file.name, 'with ID:', uploadId);
+          
+          uploadQueue.push({ 
+            file, 
+            basedir: cwd,
+            uploadId,
+            abortController: upload?.abortController
+          });
+        });
+        
+        // Start processing uploads
+        processUploadQueue(uploadManager);
         setOpen(false);
-        onUpload();
       };
       input.click();
     },
-    [cwd, onUpload, setOpen]
+    [cwd, setOpen, uploadManager]
   );
 
   const takePhoto = useMemo(() => handleUpload("photo"), [handleUpload]);

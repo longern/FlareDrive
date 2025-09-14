@@ -1,8 +1,103 @@
 import pLimit from "p-limit";
 
 import { encodeKey, FileItem } from "../FileGrid";
+import { parseXmlSafely, extractFileInfoFromXml, debugXmlIssues } from "../utils/xmlParser";
 
 const WEBDAV_ENDPOINT = "/file/";
+
+// Helper function to parse responses from DOM elements
+async function parseResponsesFromDOM(responses: Element[], path: string): Promise<FileItem[]> {
+  const currentPath = path.replace(/\/$/, "");
+  console.log(`Current path for filtering: "${currentPath}"`);
+  
+  const items: FileItem[] = responses
+    .filter((response) => {
+      const href = response.querySelector("href")?.textContent;
+      if (!href) return false;
+      
+      const decodedPath = decodeURIComponent(href).slice(WEBDAV_ENDPOINT.length);
+      const shouldInclude = decodedPath !== currentPath;
+      
+      if (!shouldInclude) {
+        console.log(`Filtering out current directory: "${decodedPath}"`);
+      }
+      
+      return shouldInclude;
+    })
+    .map((response) => {
+      try {
+        const href = response.querySelector("href")?.textContent;
+        if (!href) throw new Error("Missing href in response");
+        
+        const contentType = response.querySelector("getcontenttype")?.textContent || "application/octet-stream";
+        const size = response.querySelector("getcontentlength")?.textContent;
+        const lastModified = response.querySelector("getlastmodified")?.textContent;
+        const thumbnail = response.getElementsByTagNameNS("flaredrive", "thumbnail")[0]?.textContent;
+        
+        const fileItem = {
+          key: decodeURI(href).replace(/^\/file\//, ""),
+          size: size ? Number(size) : 0,
+          uploaded: lastModified || new Date().toISOString(),
+          httpMetadata: { contentType },
+          customMetadata: { thumbnail },
+        } as FileItem;
+        
+        return fileItem;
+      } catch (error) {
+        console.error("Error parsing response item:", error, response);
+        return null;
+      }
+    })
+    .filter((item): item is FileItem => item !== null);
+  
+  return items;
+}
+
+// Helper function to parse responses from regex-extracted data
+async function parseResponsesFromRegex(
+  fileInfos: Array<{
+    href: string;
+    contentType?: string;
+    size?: string;
+    lastModified?: string;
+    thumbnail?: string;
+  }>,
+  path: string
+): Promise<FileItem[]> {
+  const currentPath = path.replace(/\/$/, "");
+  console.log(`Current path for filtering: "${currentPath}"`);
+  
+  const items: FileItem[] = fileInfos
+    .filter((fileInfo) => {
+      const decodedPath = decodeURIComponent(fileInfo.href).slice(WEBDAV_ENDPOINT.length);
+      const shouldInclude = decodedPath !== currentPath;
+      
+      if (!shouldInclude) {
+        console.log(`Filtering out current directory: "${decodedPath}"`);
+      }
+      
+      return shouldInclude;
+    })
+    .map((fileInfo) => {
+      try {
+        const fileItem = {
+          key: decodeURI(fileInfo.href).replace(/^\/file\//, ""),
+          size: fileInfo.size ? Number(fileInfo.size) : 0,
+          uploaded: fileInfo.lastModified || new Date().toISOString(),
+          httpMetadata: { contentType: fileInfo.contentType || "application/octet-stream" },
+          customMetadata: { thumbnail: fileInfo.thumbnail },
+        } as FileItem;
+        
+        return fileItem;
+      } catch (error) {
+        console.error("Error parsing file info:", error, fileInfo);
+        return null;
+      }
+    })
+    .filter((item): item is FileItem => item !== null);
+  
+  return items;
+}
 
 function getAuthHeaders(): Record<string, string> {
   const credentials = localStorage.getItem('flaredrive_auth');
@@ -15,50 +110,85 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 export async function fetchPath(path: string) {
+  console.log(`Fetching path: "${path}"`);
+  
   const headers: Record<string, string> = {
     Depth: "1",
     ...getAuthHeaders()
   };
   
-  const res = await fetch(`${WEBDAV_ENDPOINT}${encodeKey(path)}`, {
-    method: "PROPFIND",
-    headers,
-  });
-
-  if (!res.ok) throw new Error("Failed to fetch");
-  if (!res.headers.get("Content-Type")?.includes("application/xml"))
-    throw new Error("Invalid response");
-
-  const parser = new DOMParser();
-  const text = await res.text();
-  const document = parser.parseFromString(text, "application/xml");
-  const items: FileItem[] = Array.from(document.querySelectorAll("response"))
-    .filter(
-      (response) =>
-        decodeURIComponent(
-          response.querySelector("href")?.textContent ?? ""
-        ).slice(WEBDAV_ENDPOINT.length) !== path.replace(/\/$/, "")
-    )
-    .map((response) => {
-      const href = response.querySelector("href")?.textContent;
-      if (!href) throw new Error("Invalid response");
-      const contentType = response.querySelector("getcontenttype")?.textContent;
-      const size = response.querySelector("getcontentlength")?.textContent;
-      const lastModified =
-        response.querySelector("getlastmodified")?.textContent;
-      const thumbnail = response.getElementsByTagNameNS(
-        "flaredrive",
-        "thumbnail"
-      )[0]?.textContent;
-      return {
-        key: decodeURI(href).replace(/^\/file\//, ""),
-        size: size ? Number(size) : 0,
-        uploaded: lastModified!,
-        httpMetadata: { contentType: contentType! },
-        customMetadata: { thumbnail },
-      } as FileItem;
+  const url = `${WEBDAV_ENDPOINT}${encodeKey(path)}`;
+  console.log(`PROPFIND URL: ${url}`);
+  
+  try {
+    const res = await fetch(url, {
+      method: "PROPFIND",
+      headers,
     });
-  return items;
+
+    console.log(`Response status: ${res.status}`);
+    console.log(`Content-Type: ${res.headers.get('Content-Type')}`);
+    console.log(`Content-Length: ${res.headers.get('Content-Length')}`);
+    
+    // Log all headers manually
+    const headersObj: Record<string, string> = {};
+    res.headers.forEach((value, key) => {
+      headersObj[key] = value;
+    });
+    console.log(`Response headers:`, headersObj);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`PROPFIND failed with status ${res.status}:`, errorText);
+      throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+    }
+    
+    const contentType = res.headers.get("Content-Type");
+    if (!contentType?.includes("application/xml")) {
+      console.error(`Invalid content type: ${contentType}`);
+      throw new Error(`Invalid response content type: ${contentType}`);
+    }
+
+    const text = await res.text();
+    console.log(`XML Response length: ${text.length}`);
+    console.log(`XML Response preview:`, text.substring(0, 500));
+    
+    // Try robust XML parsing first
+    let document = parseXmlSafely(text);
+    let items: FileItem[] = [];
+    
+    if (document) {
+      // XML parsing succeeded, use DOM approach
+      console.log('Using DOM-based XML parsing');
+      const responses = Array.from(document.querySelectorAll("response"));
+      console.log(`Found ${responses.length} response elements`);
+      
+      items = await parseResponsesFromDOM(responses, path);
+    } else {
+      // XML parsing failed, use regex fallback
+      console.log('DOM parsing failed, using regex fallback');
+      debugXmlIssues(text);
+      
+      const fileInfos = extractFileInfoFromXml(text);
+      items = await parseResponsesFromRegex(fileInfos, path);
+    }
+    
+    console.log(`Parsed ${items.length} files/folders:`);
+    items.forEach((item, index) => {
+      if (index < 10) { // Only log first 10 items
+        console.log(`  ${index + 1}. "${item.key}" (${item.httpMetadata.contentType})`);
+      }
+    });
+    
+    if (items.length > 10) {
+      console.log(`  ... and ${items.length - 10} more items`);
+    }
+    
+    return items;
+  } catch (error) {
+    console.error("Error in fetchPath:", error);
+    throw error;
+  }
 }
 
 const THUMBNAIL_SIZE = 144;
@@ -129,11 +259,26 @@ function xhrFetch(
   url: RequestInfo | URL,
   requestInit: RequestInit & {
     onUploadProgress?: (progressEvent: ProgressEvent) => void;
+    abortSignal?: AbortSignal;
   }
 ) {
+  console.log('xhrFetch called with URL:', url);
   return new Promise<Response>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = requestInit.onUploadProgress ?? null;
+    
+    // Handle abort signal
+    if (requestInit.abortSignal) {
+      requestInit.abortSignal.addEventListener('abort', () => {
+        xhr.abort();
+        reject(new DOMException('Aborted', 'AbortError'));
+      });
+    }
+    xhr.upload.onprogress = (event) => {
+      console.log('XHR upload progress:', event.loaded, '/', event.total);
+      if (requestInit.onUploadProgress) {
+        requestInit.onUploadProgress(event);
+      }
+    };
     xhr.open(
       requestInit.method ?? "GET",
       url instanceof Request ? url.url : url
@@ -141,6 +286,7 @@ function xhrFetch(
     const headers = new Headers(requestInit.headers);
     headers.forEach((value, key) => xhr.setRequestHeader(key, value));
     xhr.onload = () => {
+      console.log('XHR request completed with status:', xhr.status);
       const headers = xhr
         .getAllResponseHeaders()
         .trim()
@@ -150,9 +296,18 @@ function xhrFetch(
           acc[key] = value;
           return acc;
         }, {} as Record<string, string>);
-      resolve(new Response(xhr.responseText, { status: xhr.status, headers }));
+      
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(new Response(xhr.responseText, { status: xhr.status, headers }));
+      } else {
+        console.error('XHR request failed with status:', xhr.status, 'response:', xhr.responseText);
+        reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+      }
     };
-    xhr.onerror = reject;
+    xhr.onerror = (event) => {
+      console.error('XHR request error:', event);
+      reject(new Error('Network error during upload'));
+    };
     if (
       requestInit.body instanceof Blob ||
       typeof requestInit.body === "string"
@@ -171,6 +326,7 @@ export async function multipartUpload(
       loaded: number;
       total: number;
     }) => void;
+    abortSignal?: AbortSignal;
   }
 ) {
   const headers = { ...getAuthHeaders(), ...(options?.headers || {}) };
@@ -196,6 +352,7 @@ export async function multipartUpload(
         method: "PUT",
         headers: { ...headers, ...getAuthHeaders() },
         body: chunk,
+        abortSignal: options?.abortSignal,
         onUploadProgress: (progressEvent) => {
           if (typeof options?.onUploadProgress !== "function") return;
           options.onUploadProgress({
@@ -247,16 +404,31 @@ export async function createFolder(cwd: string) {
 export const uploadQueue: {
   basedir: string;
   file: File;
+  uploadId?: string;
+  abortController?: AbortController;
 }[] = [];
 
-export async function processUploadQueue() {
+export async function processUploadQueue(
+  uploadManager?: any,
+  onProgress?: (loaded: number, total: number, uploadId: string) => void
+) {
+  console.log('processUploadQueue called, queue length:', uploadQueue.length);
+  
   if (!uploadQueue.length) {
+    console.log('Upload queue is empty, returning');
     return;
   }
 
-  const { basedir, file } = uploadQueue.shift()!;
+  const item = uploadQueue.shift()!;
+  const { basedir, file, uploadId, abortController } = item;
+  
+  console.log('Processing upload:', file.name, 'uploadId:', uploadId, 'hasManager:', !!uploadManager);
   let thumbnailDigest = null;
 
+  // Skip thumbnail generation for now to debug upload issue
+  console.log('Skipping thumbnail generation for debugging');
+  
+  /* Temporarily disabled for debugging
   if (
     file.type.startsWith("image/") ||
     file.type === "video/mp4" ||
@@ -281,18 +453,71 @@ export async function processUploadQueue() {
       console.log(`Generate thumbnail failed`);
     }
   }
+  */
 
   try {
+    console.log('Starting actual upload for:', file.name);
     const headers: { "fd-thumbnail"?: string } = {};
     if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
+    
+    // Update status to uploading
+    if (uploadManager && uploadId) {
+      console.log('Setting upload status to uploading for:', uploadId);
+      uploadManager.setUploadStatus(uploadId, 'uploading');
+    } else {
+      console.log('No uploadManager or uploadId, proceeding without tracking');
+    }
+    
     if (file.size >= SIZE_LIMIT) {
-      await multipartUpload(basedir + file.name, file, { headers });
+      await multipartUpload(basedir + file.name, file, { 
+        headers,
+        abortSignal: abortController?.signal,
+        onUploadProgress: (progressEvent) => {
+          if (uploadManager && uploadId) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            uploadManager.updateProgress(uploadId, percentCompleted);
+          }
+          if (onProgress && uploadId) {
+            onProgress(progressEvent.loaded, progressEvent.total, uploadId);
+          }
+        }
+      });
     } else {
       const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(basedir + file.name)}`;
-      await xhrFetch(uploadUrl, { method: "PUT", headers: { ...headers, ...getAuthHeaders() }, body: file });
+      await xhrFetch(uploadUrl, { 
+        method: "PUT", 
+        headers: { ...headers, ...getAuthHeaders() }, 
+        body: file,
+        abortSignal: abortController?.signal,
+        onUploadProgress: (progressEvent) => {
+          if (uploadManager && uploadId) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            uploadManager.updateProgress(uploadId, percentCompleted);
+          }
+        }
+      });
     }
-  } catch (error) {
+    
+    // Mark as completed
+    if (uploadManager && uploadId) {
+      uploadManager.completeUpload(uploadId);
+    }
+  } catch (error: any) {
     console.log(`Upload ${file.name} failed`, error);
+    
+    // Check if it was cancelled
+    if (error.name === 'AbortError') {
+      if (uploadManager && uploadId) {
+        // Status already set by cancelUpload method
+      }
+    } else {
+      // Mark as error
+      if (uploadManager && uploadId) {
+        uploadManager.errorUpload(uploadId, error.message || 'Upload failed');
+      }
+    }
   }
-  setTimeout(processUploadQueue);
+  
+  // Process next upload
+  setTimeout(() => processUploadQueue(uploadManager, onProgress));
 }

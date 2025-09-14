@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { IconButton, Menu, MenuItem, Slide, Toolbar } from "@mui/material";
+import { IconButton, Menu, MenuItem, Slide, Toolbar, Tooltip } from "@mui/material";
 import {
   Close as CloseIcon,
   Delete as DeleteIcon,
   Download as DownloadIcon,
+  Link as LinkIcon,
   MoreHoriz as MoreHorizIcon,
 } from "@mui/icons-material";
 
@@ -13,12 +14,14 @@ function MultiSelectToolbar({
   onDownload,
   onRename,
   onDelete,
+  onCopyLink,
 }: {
   multiSelected: string[] | null;
   onClose: () => void;
   onDownload: () => void;
   onRename: () => void;
   onDelete: () => void;
+  onCopyLink: () => void;
 }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -36,21 +39,42 @@ function MultiSelectToolbar({
           justifyContent: "space-evenly",
         }}
       >
-        <IconButton color="primary" onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-        <IconButton
-          color="primary"
-          disabled={
-            multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
-          }
-          onClick={onDownload}
-        >
-          <DownloadIcon />
-        </IconButton>
-        <IconButton color="primary" onClick={onDelete}>
-          <DeleteIcon />
-        </IconButton>
+        <Tooltip title="Close">
+          <IconButton color="primary" onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Download">
+          <span>
+            <IconButton
+              color="primary"
+              disabled={
+                multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
+              }
+              onClick={onDownload}
+            >
+              <DownloadIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Copy Link">
+          <span>
+            <IconButton
+              color="primary"
+              disabled={
+                multiSelected?.length !== 1 || multiSelected[0].endsWith("/")
+              }
+              onClick={onCopyLink}
+            >
+              <LinkIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Delete">
+          <IconButton color="primary" onClick={onDelete}>
+            <DeleteIcon />
+          </IconButton>
+        </Tooltip>
         <IconButton
           color="primary"
           disabled={
@@ -68,8 +92,23 @@ function MultiSelectToolbar({
           >
             {multiSelected.length === 1 && (
               <React.Fragment>
-                <MenuItem onClick={onRename}>Rename</MenuItem>
-                <MenuItem>Share</MenuItem>
+                <MenuItem 
+                  onClick={() => {
+                    onRename();
+                    setAnchorEl(null);
+                  }}
+                >
+                  Rename
+                </MenuItem>
+                <MenuItem 
+                  onClick={() => {
+                    onCopyLink();
+                    setAnchorEl(null);
+                  }}
+                  disabled={multiSelected[0].endsWith("/")}
+                >
+                  Copy Link
+                </MenuItem>
               </React.Fragment>
             )}
           </Menu>

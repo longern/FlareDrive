@@ -65,8 +65,9 @@ FlareDrive uses a dual architecture:
 - **FileGrid.tsx**: File/folder grid display with thumbnails and metadata
 - **Header.tsx**: Top navigation with search and logout functionality
 - **UploadDrawer.tsx**: File upload interface and progress tracking
-- **MultiSelectToolbar.tsx**: Actions for selected files (download, rename, delete)
-- **app/transfer.ts**: File operations with authentication headers
+- **MultiSelectToolbar.tsx**: Actions for selected files (download, copy link, rename, delete)
+- **app/transfer.ts**: File operations with authentication headers and debug logging
+- **utils/fuzzySearch.ts**: Advanced search algorithms (fuzzy, n-gram, Levenshtein)
 
 ### Cloudflare Functions Backend (`functions/file/`)
 WebDAV + REST API implementation:
@@ -103,8 +104,14 @@ WebDAV + REST API implementation:
 - **Thumbnail Generation**: Client-side canvas rendering for images, videos, PDFs
 - **Thumbnail Storage**: R2 at `/_$flaredrive$/thumbnails/{sha1}.png`  
 - **Metadata**: Custom metadata `fd-thumbnail` header links files to thumbnails
-- **Search**: Client-side filtering by filename (case-insensitive)
+- **Search**: Advanced fuzzy search with multiple algorithms:
+  - Exact matching, prefix matching, substring matching
+  - N-gram similarity for partial matches
+  - Levenshtein distance for typo tolerance
+  - Word boundary matching and acronym matching
+  - Toggle between fuzzy and exact search modes
 - **Operations**: Copy, move, rename, delete via WebDAV methods
+- **Link Sharing**: Copy direct file URLs to clipboard for easy sharing
 
 ## Key Directories
 
@@ -129,6 +136,14 @@ tsconfig.json          # TypeScript configuration
 4. Run `npm start` to start React development server
 5. Pages Functions run automatically in development mode
 6. Access WebDAV at `http://localhost:3000/file/` (when running locally)
+
+### Debugging File Issues
+If files are not showing up or search is not working:
+1. Open browser developer console to see debug logs
+2. Check `fetchPath()` logs for PROPFIND request/response details
+3. Verify authentication headers are being sent
+4. Check XML parsing and filtering logic
+5. Use fuzzy search toggle to switch between search modes
 
 ### Testing WebDAV Connectivity
 Use WebDAV clients like:
@@ -172,6 +187,7 @@ npx wrangler pages deploy build  # Deploy to Cloudflare Pages
 - **WebDAV Clients**: Use HTTP Basic Auth with username/password
 - **Session Management**: Web sessions stored in localStorage
 - **Directory Listing**: PROPFIND requests always require authentication
+- **Link Sharing**: Direct file URLs can be shared publicly (no authentication needed for access)
 
 ### WebDAV Limitations
 - **Large file uploads**: Must use web interface for files ≥128MB (Workers request size limit)
