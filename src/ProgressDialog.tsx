@@ -46,7 +46,7 @@ function ProgressDialog({
           bgcolor: "#222",
           color: "#fff",
           "& .MuiTab-root": { flexBasis: "50%", color: "#fff" },
-          "& .Mui-selected": { color: "#FF69B4" },
+          "& .Mui-selected": { color: "#6B00FF" },
         }}
       >
         <Tab label="Downloads" />
@@ -76,12 +76,12 @@ function ProgressDialog({
                     <ErrorOutlineIcon color="error" />
                   </Tooltip>
                 ) : task.status === "completed" ? (
-                  <CheckCircleOutlineIcon sx={{ color: "#FF69B4" }} />
+                  <CheckCircleOutlineIcon sx={{ color: "#6B00FF" }} />
                 ) : task.status === "in-progress" ? (
                   <CircularProgress
                     variant="determinate"
                     size={24}
-                    sx={{ color: "#FF69B4" }}
+                    sx={{ color: "#6B00FF" }}
                     value={(task.loaded / task.total) * 100}
                   />
                 ) : null}

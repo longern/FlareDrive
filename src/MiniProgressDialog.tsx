@@ -40,7 +40,7 @@ export default function MiniProgressDialog() {
             <LinearProgress
               variant="determinate"
               value={u.total ? (u.loaded / u.total) * 100 : 0}
-              sx={{ bgcolor: '#333', '& .MuiLinearProgress-bar': { bgcolor: '#FF69B4' } }}
+              sx={{ bgcolor: '#333', '& .MuiLinearProgress-bar': { bgcolor: '#6B00FF' } }}
             />
             <Typography variant="caption" sx={{ color: '#fff' }}>
               {Math.round(u.loaded / 1024)} KB / {Math.round(u.total / 1024)} KB
@@ -58,7 +58,7 @@ export default function MiniProgressDialog() {
               variant="determinate"
               value={d.total ? (d.loaded / d.total) * 100 : 0}
               color="secondary"
-              sx={{ bgcolor: '#333', '& .MuiLinearProgress-bar': { bgcolor: '#FF69B4' } }}
+              sx={{ bgcolor: '#333', '& .MuiLinearProgress-bar': { bgcolor: '#6B00FF' } }}
             />
             <Typography variant="caption" sx={{ color: '#fff' }}>
               {Math.round(d.loaded / 1024)} KB / {Math.round(d.total / 1024)} KB
