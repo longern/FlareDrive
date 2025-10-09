@@ -255,6 +255,39 @@ export async function blobDigest(blob: Blob) {
 
 export const SIZE_LIMIT = 100 * 1000 * 1000; // 100MB
 
+/**
+ * Sanitize filename to lowercase and replace spaces/symbols with dash
+ * Example: "Kahitna - Menikahimu.mp3" -> "kahitna---menikahimu.mp3"
+ * Keeps only alphanumeric, dots (for extension), and dashes
+ */
+export function sanitizeFileName(fileName: string): string {
+  // Split filename and extension
+  const lastDotIndex = fileName.lastIndexOf('.');
+  let name = fileName;
+  let extension = '';
+
+  if (lastDotIndex > 0) {
+    name = fileName.substring(0, lastDotIndex);
+    extension = fileName.substring(lastDotIndex); // includes the dot
+  }
+
+  // Convert to lowercase
+  name = name.toLowerCase();
+  extension = extension.toLowerCase();
+
+  // Replace any character that is not alphanumeric or dash with dash
+  // This will replace spaces, special characters, etc. with dash
+  name = name.replace(/[^a-z0-9-]+/g, '-');
+
+  // Remove leading/trailing dashes
+  name = name.replace(/^-+|-+$/g, '');
+
+  // Replace multiple consecutive dashes with single dash
+  name = name.replace(/-+/g, '-');
+
+  return name + extension;
+}
+
 function xhrFetch(
   url: RequestInfo | URL,
   requestInit: RequestInit & {
@@ -457,9 +490,14 @@ export async function processUploadQueue(
 
   try {
     console.log('Starting actual upload for:', file.name);
+
+    // Sanitize the filename
+    const sanitizedFileName = sanitizeFileName(file.name);
+    console.log('Sanitized filename:', file.name, '->', sanitizedFileName);
+
     const headers: { "fd-thumbnail"?: string } = {};
     if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
-    
+
     // Update status to uploading
     if (uploadManager && uploadId) {
       console.log('Setting upload status to uploading for:', uploadId);
@@ -467,9 +505,9 @@ export async function processUploadQueue(
     } else {
       console.log('No uploadManager or uploadId, proceeding without tracking');
     }
-    
+
     if (file.size >= SIZE_LIMIT) {
-      await multipartUpload(basedir + file.name, file, { 
+      await multipartUpload(basedir + sanitizedFileName, file, {
         headers,
         abortSignal: abortController?.signal,
         onUploadProgress: (progressEvent) => {
@@ -483,10 +521,10 @@ export async function processUploadQueue(
         }
       });
     } else {
-      const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(basedir + file.name)}`;
-      await xhrFetch(uploadUrl, { 
-        method: "PUT", 
-        headers: { ...headers, ...getAuthHeaders() }, 
+      const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(basedir + sanitizedFileName)}`;
+      await xhrFetch(uploadUrl, {
+        method: "PUT",
+        headers: { ...headers, ...getAuthHeaders() },
         body: file,
         abortSignal: abortController?.signal,
         onUploadProgress: (progressEvent) => {
