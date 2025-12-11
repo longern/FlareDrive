@@ -1,0 +1,36 @@
+name: Sync Modify to Main
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-modify-to-main:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+      - name: Sync Modify to Main
+        run: |
+          echo "📦 正在从 Modify 同步到 main"
+          git fetch origin Modify
+          git fetch origin main
+          git checkout main
+          git merge origin/Modify --no-ff -m "🔄 Sync: Merge Modify into main"
+          git push origin main
+          
+      - name: Success message
+        run: |
+          echo "✅ 成功将 Modify 同步到 main"

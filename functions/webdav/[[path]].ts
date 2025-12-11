@@ -12,7 +12,10 @@ import { handleRequestPost } from "./post";
 
 async function handleRequestOptions() {
   return new Response(null, {
-    headers: { Allow: Object.keys(HANDLERS).join(", ") },
+    headers: {
+      Allow: Object.keys(HANDLERS).join(", "),
+      DAV: "1",
+    },
   });
 }
 
@@ -45,7 +48,7 @@ export const onRequest: PagesFunction<{
   if (request.method === "OPTIONS") return handleRequestOptions();
 
   const skipAuth =
-    env.WEBDAV_PUBLIC_READ &&
+    env.WEBDAV_PUBLIC_READ === "1" &&
     ["GET", "HEAD", "PROPFIND"].includes(request.method);
 
   if (!skipAuth) {
