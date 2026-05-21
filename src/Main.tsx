@@ -16,6 +16,7 @@ import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import TextPadDrawer from "./TextPadDrawer";
 import { copyPaste, fetchPath } from "./app/transfer";
 import { useTransferQueue, useUploadEnqueue } from "./app/transferQueue";
+import { decodeDirectoryHash, encodeDirectoryHash } from "./app/utils";
 
 // Centered helper
 function Centered({ children }: { children: React.ReactNode }) {
@@ -116,7 +117,9 @@ function Main({
   search: string;
   onError: (error: Error) => void;
 }) {
-  const [cwd, setCwd] = useState("");
+  const [cwd, setCwd] = useState(() =>
+    decodeDirectoryHash(window.location.hash)
+  );
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [multiSelected, setMultiSelected] = useState<string[] | null>(null);
@@ -126,6 +129,34 @@ function Main({
 
   const transferQueue = useTransferQueue();
   const uploadEnqueue = useUploadEnqueue();
+
+  // Route directory changes through the URL hash so browser history works
+  const navigateToCwd = useCallback((newCwd: string) => {
+    const nextHash = encodeDirectoryHash(newCwd);
+    if (window.location.hash === nextHash) {
+      setCwd(decodeDirectoryHash(nextHash));
+      return;
+    }
+
+    window.location.hash = nextHash;
+  }, []);
+
+  // Keep the current directory synchronized with Back, Forward, and reloads
+  useEffect(() => {
+    const syncCwdFromHash = () => {
+      const nextCwd = decodeDirectoryHash(window.location.hash);
+      const normalizedHash = encodeDirectoryHash(nextCwd);
+      if (window.location.hash !== normalizedHash) {
+        window.history.replaceState(null, "", normalizedHash);
+      }
+
+      setCwd(nextCwd);
+    };
+
+    syncCwdFromHash();
+    window.addEventListener("hashchange", syncCwdFromHash);
+    return () => window.removeEventListener("hashchange", syncCwdFromHash);
+  }, []);
 
   const fetchFiles = useCallback(() => {
     fetchPath(cwd)
@@ -178,7 +209,7 @@ function Main({
 
   return (
     <>
-      {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
+      {cwd && <PathBreadcrumb path={cwd} onCwdChange={navigateToCwd} />}
 
       {loading ? (
         <Centered>
@@ -194,7 +225,7 @@ function Main({
         >
           <FileGrid
             files={filteredFiles}
-            onCwdChange={(newCwd: string) => setCwd(newCwd)}
+            onCwdChange={navigateToCwd}
             multiSelected={multiSelected}
             onMultiSelect={handleMultiSelect}
             emptyMessage={<Centered>No files or folders</Centered>}
