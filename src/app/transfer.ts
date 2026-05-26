@@ -111,114 +111,6 @@ export async function blobDigest(blob: Blob) {
 
 export const SIZE_LIMIT = 100 * 1000 * 1000; // 100MB
 
-function xhrFetch(
-  url: RequestInfo | URL,
-  requestInit: RequestInit & {
-    onUploadProgress?: (progressEvent: ProgressEvent) => void;
-  }
-) {
-  return new Promise<Response>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = requestInit.onUploadProgress ?? null;
-    xhr.open(
-      requestInit.method ?? "GET",
-      url instanceof Request ? url.url : url
-    );
-    const headers = new Headers(requestInit.headers);
-    headers.forEach((value, key) => xhr.setRequestHeader(key, value));
-    xhr.onload = () => {
-      const headers = xhr
-        .getAllResponseHeaders()
-        .trim()
-        .split("\r\n")
-        .reduce((acc, header) => {
-          const [key, value] = header.split(": ");
-          acc[key] = value;
-          return acc;
-        }, {} as Record<string, string>);
-      resolve(new Response(xhr.responseText, { status: xhr.status, headers }));
-    };
-    xhr.onerror = reject;
-    if (
-      requestInit.body instanceof Blob ||
-      typeof requestInit.body === "string"
-    ) {
-      xhr.send(requestInit.body);
-    }
-  });
-}
-
-export async function multipartUpload(
-  key: string,
-  file: File,
-  options?: {
-    headers?: Record<string, string>;
-    onUploadProgress?: (progressEvent: {
-      loaded: number;
-      total: number;
-    }) => void;
-  }
-) {
-  const headers = options?.headers || {};
-  headers["content-type"] = file.type;
-
-  const uploadResponse = await fetch(`/webdav/${encodeKey(key)}?uploads`, {
-    headers,
-    method: "POST",
-  });
-  const { uploadId } = await uploadResponse.json<{ uploadId: string }>();
-  const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
-
-  const limit = pLimit(2);
-  const parts = Array.from({ length: totalChunks }, (_, i) => i + 1);
-  const partsLoaded = Array.from({ length: totalChunks + 1 }, () => 0);
-  const promises = parts.map((i) =>
-    limit(async () => {
-      const chunk = file.slice((i - 1) * SIZE_LIMIT, i * SIZE_LIMIT);
-      const searchParams = new URLSearchParams({
-        partNumber: i.toString(),
-        uploadId,
-      });
-      const uploadUrl = `/webdav/${encodeKey(key)}?${searchParams}`;
-      if (i === limit.concurrency)
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const uploadPart = () =>
-        xhrFetch(uploadUrl, {
-          method: "PUT",
-          headers,
-          body: chunk,
-          onUploadProgress: (progressEvent) => {
-            partsLoaded[i] = progressEvent.loaded;
-            options?.onUploadProgress?.({
-              loaded: partsLoaded.reduce((a, b) => a + b),
-              total: file.size,
-            });
-          },
-        });
-
-      const retryReducer = (acc: Promise<Response>) =>
-        acc
-          .then((res) => {
-            const retryAfter = res.headers.get("retry-after");
-            if (!retryAfter) return res;
-            return uploadPart();
-          })
-          .catch(uploadPart);
-      const response = await [1, 2].reduce(retryReducer, uploadPart());
-      return { partNumber: i, etag: response.headers.get("etag")! };
-    })
-  );
-  const uploadedParts = await Promise.all(promises);
-  const completeParams = new URLSearchParams({ uploadId });
-  const response = await fetch(`/webdav/${encodeKey(key)}?${completeParams}`, {
-    method: "POST",
-    body: JSON.stringify({ parts: uploadedParts }),
-  });
-  if (!response.ok) throw new Error(await response.text());
-  return response;
-}
-
 export async function copyPaste(source: string, target: string, move = false) {
   const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(source)}`;
   const destinationUrl = new URL(
@@ -247,6 +139,119 @@ export async function createFolder(cwd: string) {
   }
 }
 
+// 添加流式上传函数
+export async function streamUpload(
+  key: string,
+  file: File,
+  options?: {
+    headers?: Record<string, string>;
+    onUploadProgress?: (progressEvent: {
+      loaded: number;
+      total: number;
+    }) => void;
+    chunkSize?: number;
+  }
+) {
+  const chunkSize = options?.chunkSize || 64 * 1024; // 64KB chunks
+  const headers = options?.headers || {};
+  headers["content-type"] = file.type;
+  headers["transfer-encoding"] = "chunked";
+  
+  // 创建可读流
+  const stream = new ReadableStream({
+    start(controller) {
+      let offset = 0;
+      
+      const pushChunk = async () => {
+        if (offset >= file.size) {
+          controller.close();
+          return;
+        }
+        
+        const chunk = file.slice(offset, offset + chunkSize);
+        const arrayBuffer = await chunk.arrayBuffer();
+        controller.enqueue(new Uint8Array(arrayBuffer));
+        
+        offset += chunkSize;
+        options?.onUploadProgress?.({
+          loaded: Math.min(offset, file.size),
+          total: file.size
+        });
+        
+        // 继续下一个chunk
+        setTimeout(pushChunk, 0);
+      };
+      
+      pushChunk();
+    }
+  });
+  
+  const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(key)}`;
+  return await fetch(uploadUrl, {
+    method: "PUT",
+    headers,
+    body: stream,
+    // @ts-ignore - 启用流式传输
+    duplex: 'half'
+  });
+}
+
+// 流式上传单个分片
+async function streamChunk(
+  url: string,
+  file: File | Blob,
+  options: {
+    headers?: Record<string, string>;
+    onProgress?: (event: { loaded: number; total: number }) => void;
+  }
+) {
+  const chunkSize = 64 * 1024; // 64KB
+  let loaded = 0;
+  
+  const stream = new ReadableStream({
+    start(controller) {
+      let offset = 0;
+      
+      const reader = new FileReader();
+      
+      const readNextChunk = () => {
+        if (offset >= file.size) {
+          controller.close();
+          return;
+        }
+        
+        const chunk = file.slice(offset, offset + chunkSize);
+        reader.onload = (e) => {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          controller.enqueue(new Uint8Array(arrayBuffer));
+          
+          loaded += arrayBuffer.byteLength;
+          options.onProgress?.({ loaded, total: file.size });
+          
+          offset += chunkSize;
+          setTimeout(readNextChunk, 0);
+        };
+        
+        reader.readAsArrayBuffer(chunk);
+      };
+      
+      readNextChunk();
+    }
+  });
+  
+  return await fetch(url, {
+    method: "PUT",
+    headers: {
+      ...options.headers,
+      "transfer-encoding": "chunked"
+    },
+    body: stream,
+    // @ts-ignore
+    duplex: 'half'
+  });
+}
+
+// 修改 processTransferTask 函数
 export async function processTransferTask({
   task,
   onTaskProgress,
@@ -284,18 +289,85 @@ export async function processTransferTask({
 
   const headers: { "fd-thumbnail"?: string } = {};
   if (thumbnailDigest) headers["fd-thumbnail"] = thumbnailDigest;
+  
   if (file.size >= SIZE_LIMIT) {
     return await multipartUpload(remoteKey, file, {
       headers,
       onUploadProgress: onTaskProgress,
     });
   } else {
-    const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(remoteKey)}`;
-    return await xhrFetch(uploadUrl, {
-      method: "PUT",
+    // 对于小文件，也使用流式上传替代原来的 xhrFetch
+    return await streamUpload(remoteKey, file, {
       headers,
-      body: file,
       onUploadProgress: onTaskProgress,
     });
+  }
+}
+
+// 修改 multipartUpload 函数使用流式传输
+export async function multipartUpload(
+  key: string,
+  file: File,
+  options?: {
+    headers?: Record<string, string>;
+    onUploadProgress?: (progressEvent: {
+      loaded: number;
+      total: number;
+    }) => void;
+  }
+) {
+  const headers = options?.headers || {};
+  headers["content-type"] = file.type;
+
+  // 对于大文件，使用真正的分片上传
+  if (file.size > SIZE_LIMIT) {
+    const uploadResponse = await fetch(`/webdav/${encodeKey(key)}?uploads`, {
+      headers,
+      method: "POST",
+    });
+    const { uploadId } = await uploadResponse.json<{ uploadId: string }>();
+    const totalChunks = Math.ceil(file.size / SIZE_LIMIT);
+
+    const limit = pLimit(2);
+    const parts = Array.from({ length: totalChunks }, (_, i) => i + 1);
+    const partsLoaded = Array.from({ length: totalChunks + 1 }, () => 0);
+    
+    const promises = parts.map((i) =>
+      limit(async () => {
+        const chunk = file.slice((i - 1) * SIZE_LIMIT, i * SIZE_LIMIT);
+        const searchParams = new URLSearchParams({
+          partNumber: i.toString(),
+          uploadId,
+        });
+        const uploadUrl = `/webdav/${encodeKey(key)}?${searchParams}`;
+        
+        // 对每个分片使用流式上传
+        const response = await streamChunk(uploadUrl, chunk, {
+          headers,
+          onProgress: (progressEvent) => {
+            partsLoaded[i] = progressEvent.loaded;
+            options?.onUploadProgress?.({
+              loaded: partsLoaded.reduce((a, b) => a + b),
+              total: file.size,
+            });
+          }
+        });
+        
+        return { partNumber: i, etag: response.headers.get("etag")! };
+      })
+    );
+    
+    const uploadedParts = await Promise.all(promises);
+    const completeParams = new URLSearchParams({ uploadId });
+    const response = await fetch(`/webdav/${encodeKey(key)}?${completeParams}`, {
+      method: "POST",
+      body: JSON.stringify({ parts: uploadedParts }),
+    });
+    
+    if (!response.ok) throw new Error(await response.text());
+    return response;
+  } else {
+    // 小文件直接使用流式上传
+    return await streamUpload(key, file, options);
   }
 }
