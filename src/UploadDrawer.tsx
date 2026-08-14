@@ -103,13 +103,13 @@ function UploadDrawer({
           });
         });
         
-        // Start processing uploads
-        processUploadQueue(uploadManager);
+        // Start processing uploads; refresh listing once the queue drains
+        processUploadQueue(uploadManager, undefined, onUpload);
         setOpen(false);
       };
       input.click();
     },
-    [cwd, setOpen, uploadManager]
+    [cwd, setOpen, uploadManager, onUpload]
   );
 
   const takePhoto = useMemo(() => handleUpload("photo"), [handleUpload]);

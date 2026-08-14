@@ -361,8 +361,11 @@ function Main({
               });
             });
 
-            // Start processing uploads
-            processUploadQueue(uploadManager);
+            // Start processing uploads; refresh listing once the queue drains
+            processUploadQueue(uploadManager, undefined, () => {
+              invalidateListings();
+              fetchFiles();
+            });
           }}
         >
           {viewMode === 'list' ? (

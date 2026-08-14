@@ -26,7 +26,7 @@ function AppContent() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState<Error | null>(null);
   const [fileStats, setFileStats] = useState<{ total: number; filtered: number }>({ total: 0, filtered: 0 });
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name');
   const [useFuzzySearch, setUseFuzzySearch] = useState(true);
 

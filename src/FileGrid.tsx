@@ -123,7 +123,8 @@ function FileGrid({
               >
                 <Box
                   sx={{
-                    height: 96,
+                    width: "100%",
+                    aspectRatio: "1 / 1",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",

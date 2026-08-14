@@ -396,9 +396,13 @@ export const uploadQueue: {
 
 export async function processUploadQueue(
   uploadManager?: any,
-  onProgress?: (loaded: number, total: number, uploadId: string) => void
+  onProgress?: (loaded: number, total: number, uploadId: string) => void,
+  onDrained?: () => void
 ) {
-  if (!uploadQueue.length) return;
+  if (!uploadQueue.length) {
+    onDrained?.();
+    return;
+  }
 
   const item = uploadQueue.shift()!;
   const { basedir, file, uploadId, abortController } = item;
@@ -467,5 +471,5 @@ export async function processUploadQueue(
   }
   
   // Process next upload
-  setTimeout(() => processUploadQueue(uploadManager, onProgress));
+  setTimeout(() => processUploadQueue(uploadManager, onProgress, onDrained));
 }
