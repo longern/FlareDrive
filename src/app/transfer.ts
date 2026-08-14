@@ -18,6 +18,13 @@ export function invalidateListings() {
   listingCache.clear();
 }
 
+// Non-enumerable helper so the UI can skip the loading spinner when a listing
+// will be served straight from cache.
+export function isListingCached(path: string): boolean {
+  const c = listingCache.get(path);
+  return Boolean(c && c.expires > Date.now());
+}
+
 // Helper function to parse responses from DOM elements
 async function parseResponsesFromDOM(responses: Element[], path: string): Promise<FileItem[]> {
   const currentPath = path.replace(/\/$/, "");
@@ -369,14 +376,9 @@ export async function copyPaste(source: string, target: string, move = false) {
   });
 }
 
-export async function createFolder(cwd: string) {
+export async function createFolder(cwd: string, folderName: string) {
+  if (!folderName || folderName.includes("/")) return;
   try {
-    const folderName = window.prompt("Folder name");
-    if (!folderName) return;
-    if (folderName.includes("/")) {
-      window.alert("Invalid folder name");
-      return;
-    }
     const folderKey = `${cwd}${folderName}`;
     const uploadUrl = `${WEBDAV_ENDPOINT}${encodeKey(folderKey)}`;
     await fetch(uploadUrl, { method: "MKCOL", headers: getAuthHeaders() });

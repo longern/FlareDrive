@@ -7,7 +7,7 @@ import {
   Image as ImageIcon,
   Upload as UploadIcon,
 } from "@mui/icons-material";
-import { createFolder, processUploadQueue, uploadQueue } from "./app/transfer";
+import { processUploadQueue, uploadQueue } from "./app/transfer";
 
 function IconCaptionButton({
   icon,
@@ -58,12 +58,14 @@ function UploadDrawer({
   setOpen,
   cwd,
   onUpload,
+  onCreateFolder,
   uploadManager,
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
   cwd: string;
   onUpload: () => void;
+  onCreateFolder: () => void;
   uploadManager?: any;
 }) {
   const handleUpload = useCallback(
@@ -150,8 +152,7 @@ function UploadDrawer({
               caption="Create Folder"
               onClick={async () => {
                 setOpen(false);
-                await createFolder(cwd);
-                onUpload();
+                onCreateFolder();
               }}
             />
           </Grid>

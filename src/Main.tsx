@@ -4,8 +4,13 @@ import {
   Breadcrumbs,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Link,
   Snackbar,
+  TextField,
   Typography,
 } from "@mui/material";
 import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
@@ -16,8 +21,10 @@ import MultiSelectToolbar from "./MultiSelectToolbar";
 import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import {
   copyPaste,
+  createFolder,
   fetchPath,
   invalidateListings,
+  isListingCached,
   processUploadQueue,
   uploadQueue,
 } from "./app/transfer";
@@ -25,6 +32,35 @@ import { enhancedSearch } from "./utils/fuzzySearch";
 import { getAuthHeaders } from "./utils/auth";
 import FloatingUploadProgress, { UploadItem } from "./FloatingUploadProgress";
 import UploadManager from "./utils/uploadManager";
+
+// Copy a share link to the clipboard with a legacy fallback for non-secure
+// contexts. Returns true when the link reached the clipboard.
+async function copyText(text: string): Promise<boolean> {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+    return true;
+  } catch {
+    window.prompt("Copy this URL:", text);
+    return false;
+  }
+}
+
+function shareUrl(key: string): string {
+  return `${window.location.origin}/file/${encodeKey(key)}`;
+}
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -190,7 +226,13 @@ function Main({
   const [copyLinkSnackbar, setCopyLinkSnackbar] = useState<string | null>(null);
   const [floatingUploads, setFloatingUploads] = useState<UploadItem[]>([]);
   const uploadManagerRef = useRef<UploadManager | null>(null);
-  
+
+  // MUI dialogs replacing native prompt/confirm.
+  const [folderOpen, setFolderOpen] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<string | null>(null);
+  const [deleteTargets, setDeleteTargets] = useState<string[] | null>(null);
+  const [dialogValue, setDialogValue] = useState("");
+
   // Create upload manager instance immediately
   if (!uploadManagerRef.current) {
     uploadManagerRef.current = new UploadManager({
@@ -204,7 +246,9 @@ function Main({
   }
 
   const fetchFiles = useCallback(() => {
-    setLoading(true);
+    // No loading flash when the listing is served from cache.
+    const cachedHit = isListingCached(cwd);
+    if (!cachedHit) setLoading(true);
     fetchPath(cwd)
       .then((files) => {
         setFiles(files);
@@ -276,6 +320,21 @@ function Main({
     });
   }, []);
 
+  const handleCopyLink = useCallback((key: string) => {
+    if (key.endsWith("/")) return;
+    copyText(shareUrl(key)).then(() => {
+      const fileName = key.split("/").pop() || "file";
+      setCopyLinkSnackbar(`Link copied: ${fileName}`);
+    });
+  }, []);
+
+  const handleDownload = useCallback((key: string) => {
+    const a = document.createElement("a");
+    a.href = `/file/${encodeKey(key)}`;
+    a.download = key.split("/").pop()!;
+    a.click();
+  }, []);
+
   return (
     <React.Fragment>
       {cwd && <PathBreadcrumb path={cwd} onCwdChange={setCwd} />}
@@ -310,6 +369,8 @@ function Main({
             <FileList
               files={filteredFiles}
               onCwdChange={(newCwd: string) => setCwd(newCwd)}
+              onCopyLink={handleCopyLink}
+              onDownload={handleDownload}
               multiSelected={multiSelected}
               onMultiSelect={handleMultiSelect}
               emptyMessage={<Centered>No files or folders</Centered>}
@@ -318,6 +379,8 @@ function Main({
             <FileGrid
               files={filteredFiles}
               onCwdChange={(newCwd: string) => setCwd(newCwd)}
+              onCopyLink={handleCopyLink}
+              onDownload={handleDownload}
               multiSelected={multiSelected}
               onMultiSelect={handleMultiSelect}
               emptyMessage={<Centered>No files or folders</Centered>}
@@ -336,6 +399,10 @@ function Main({
           invalidateListings();
           fetchFiles();
         }}
+        onCreateFolder={() => {
+          setDialogValue("");
+          setFolderOpen(true);
+        }}
         uploadManager={uploadManagerRef.current}
       />
       <MultiSelectToolbar
@@ -343,71 +410,144 @@ function Main({
         onClose={() => setMultiSelected(null)}
         onDownload={() => {
           if (multiSelected?.length !== 1) return;
-          const a = document.createElement("a");
-          a.href = `/file/${encodeKey(multiSelected[0])}`;
-          a.download = multiSelected[0].split("/").pop()!;
-          a.click();
+          handleDownload(multiSelected[0]);
         }}
-        onRename={async () => {
-          if (multiSelected?.length !== 1) return;
-          const newName = window.prompt("Rename to:");
-          if (!newName) return;
-          await copyPaste(multiSelected[0], cwd + newName, true);
-          invalidateListings();
-          fetchFiles();
-        }}
-        onDelete={async () => {
-          if (!multiSelected?.length) return;
-          const filenames = multiSelected
-            .map((key) => key.replace(/\/$/, "").split("/").pop())
-            .join("\n");
-          const confirmMessage = "Delete the following file(s) permanently?";
-          if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
-          for (const key of multiSelected)
-            await fetch(`/file/${encodeKey(key)}`, { method: "DELETE", headers: getAuthHeaders() });
-          invalidateListings();
-          fetchFiles();
-        }}
-        onCopyLink={async () => {
-          if (multiSelected?.length !== 1 || multiSelected[0].endsWith("/")) return;
-          
-          const filePath = multiSelected[0];
-          const fullUrl = `${window.location.origin}/file/${encodeKey(filePath)}`;
-          
-          try {
-            if (navigator.clipboard && window.isSecureContext) {
-              // Use modern clipboard API if available
-              await navigator.clipboard.writeText(fullUrl);
-            } else {
-              // Fallback for older browsers or non-secure contexts
-              const textArea = document.createElement('textarea');
-              textArea.value = fullUrl;
-              textArea.style.position = 'fixed';
-              textArea.style.left = '-999999px';
-              textArea.style.top = '-999999px';
-              document.body.appendChild(textArea);
-              textArea.focus();
-              textArea.select();
-
-              try {
-                document.execCommand('copy');
-              } catch (err) {
-                // Show user the URL in a prompt as last resort
-                window.prompt('Copy this URL:', fullUrl);
-              }
-
-              document.body.removeChild(textArea);
-            }
-
-            // Show user feedback that link was copied
-            const fileName = filePath.split('/').pop() || 'file';
-            setCopyLinkSnackbar(`Link copied for: ${fileName}`);
-          } catch (err) {
-            // Show user the URL in a prompt as fallback
-            window.prompt('Copy this URL:', fullUrl);
+        onRename={() => {
+          if (multiSelected?.length === 1) {
+            setRenameTarget(multiSelected[0]);
+            setDialogValue(multiSelected[0].split("/").pop() || "");
+          } else {
+            setRenameTarget(null);
           }
         }}
+        onDelete={() => {
+          if (multiSelected?.length) {
+            setDeleteTargets([...multiSelected]);
+            setDialogValue("");
+          }
+        }}
+        onCopyLink={() => {
+          if (multiSelected?.length === 1) handleCopyLink(multiSelected[0]);
+        }}
       />
+      <Snackbar
+        open={Boolean(copyLinkSnackbar)}
+        autoHideDuration={3000}
+        onClose={() => setCopyLinkSnackbar(null)}
+        message={copyLinkSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{ bottom: 80 }} // Position above the toolbar
+      />
+
+      {/* Create-folder dialog */}
+      <Dialog open={folderOpen} onClose={() => setFolderOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>New folder</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Folder name"
+            value={dialogValue}
+            onChange={(e) => setDialogValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                createFolder(cwd, dialogValue);
+                setFolderOpen(false);
+                invalidateListings();
+                fetchFiles();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFolderOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!dialogValue || dialogValue.includes("/")}
+            onClick={() => {
+              createFolder(cwd, dialogValue);
+              setFolderOpen(false);
+              invalidateListings();
+              fetchFiles();
+            }}
+          >
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Rename dialog */}
+      <Dialog
+        open={renameTarget !== null}
+        onClose={() => setRenameTarget(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Rename</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="New name"
+            value={dialogValue}
+            onChange={(e) => setDialogValue(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRenameTarget(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!dialogValue}
+            onClick={async () => {
+              if (!renameTarget) return;
+              await copyPaste(renameTarget, cwd + dialogValue, true);
+              setRenameTarget(null);
+              invalidateListings();
+              fetchFiles();
+            }}
+          >
+            Rename
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirm dialog */}
+      <Dialog
+        open={deleteTargets !== null}
+        onClose={() => setDeleteTargets(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Delete permanently?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {deleteTargets
+              ? deleteTargets
+                  .map((k) => k.replace(/\/$/, "").split("/").pop())
+                  .join(", ")
+              : ""}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteTargets(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              if (!deleteTargets) return;
+              for (const key of deleteTargets)
+                await fetch(`/file/${encodeKey(key)}`, { method: "DELETE", headers: getAuthHeaders() });
+              setDeleteTargets(null);
+              invalidateListings();
+              fetchFiles();
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={Boolean(copyLinkSnackbar)}
         autoHideDuration={3000}
