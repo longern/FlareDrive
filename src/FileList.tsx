@@ -114,8 +114,8 @@ function FileList({
                 <TableCell>
                   <Typography
                     variant="body2"
-                    fontWeight={isDir ? 500 : 400}
                     sx={{
+                      fontWeight: isDir ? 500 : 400,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",

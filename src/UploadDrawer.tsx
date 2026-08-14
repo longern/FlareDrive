@@ -121,32 +121,32 @@ function UploadDrawer({
       anchor="bottom"
       open={open}
       onClose={() => setOpen(false)}
-      PaperProps={{ sx: { borderRadius: "16px 16px 0 0" } }}
+      slotProps={{ paper: { sx: { borderRadius: "16px 16px 0 0" } } }}
     >
       <Card sx={{ padding: 2 }}>
         <Grid container spacing={2}>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <IconCaptionButton
               icon={<CameraIcon fontSize="large" />}
               caption="Camera"
               onClick={takePhoto}
             />
           </Grid>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <IconCaptionButton
               icon={<ImageIcon fontSize="large" />}
               caption="Image/Video"
               onClick={uploadImage}
             />
           </Grid>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <IconCaptionButton
               icon={<UploadIcon fontSize="large" />}
               caption="Upload"
               onClick={uploadFile}
             />
           </Grid>
-          <Grid item xs={3}>
+          <Grid size={3}>
             <IconCaptionButton
               icon={<CreateNewFolderIcon fontSize="large" />}
               caption="Create Folder"
