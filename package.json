@@ -3,21 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@emotion/react": "^11.11.4",
-    "@emotion/styled": "^11.11.5",
-    "@mui/icons-material": "^5.15.21",
-    "@mui/material": "^5.15.21",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.18.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "@types/node": "^20.14.9",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "p-limit": "^6.1.0",
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "p-limit": "^6.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
-    "typescript": "^5.5.3",
+    "typescript": "^5.9.3",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -51,6 +51,6 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@cloudflare/workers-types": "^4.20240620.0"
+    "@cloudflare/workers-types": "^4.20260702.1"
   }
 }
