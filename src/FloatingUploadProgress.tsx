@@ -52,24 +52,14 @@ const FloatingUploadProgress: React.FC<FloatingUploadProgressProps> = ({
   useEffect(() => {
     const hasActiveUploads = uploads.some(u => u.status === 'uploading' || u.status === 'pending');
     if (hasActiveUploads && !isVisible) {
-      console.log('New active uploads detected, showing FloatingUploadProgress');
       setIsVisible(true);
     }
   }, [uploads, isVisible]);
-  
-  console.log('FloatingUploadProgress render - uploads:', uploads.length, 'visible:', isVisible);
-  console.log('Uploads in FloatingProgress:', uploads.map(u => ({
-    id: u.id,
-    fileName: u.fileName,
-    status: u.status,
-    progress: u.progress
-  })));
 
   // Show the component if there are ANY uploads (even completed ones initially)
   const shouldShow = isVisible && uploads.length > 0;
-  
+
   if (!shouldShow) {
-    console.log('FloatingUploadProgress not showing - visible:', isVisible, 'uploads:', uploads.length);
     return null;
   }
 
@@ -185,7 +175,6 @@ const FloatingUploadProgress: React.FC<FloatingUploadProgressProps> = ({
                   onClearCompleted();
                   onClose();
                 } else {
-                  console.log('Cannot close while uploads are in progress');
                   // Optionally minimize instead of closing
                   setIsExpanded(false);
                 }

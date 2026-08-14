@@ -16,7 +16,15 @@ export async function handleRequestGet({
 
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
-  if (path.startsWith("_$flaredrive$/thumbnails/"))
-    headers.set("Cache-Control", "max-age=31536000");
+  if (path.startsWith("_$flaredrive$/thumbnails/")) {
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  } else {
+    // General objects get a short browser-only cache so repeat GETs (and
+    // clients that re-download) skip R2. Stays `private` because GET is
+    // auth-gated unless WEBDAV_PUBLIC_READ — shared-cache caching authed
+    // content would be a leak. ETag is already written by writeHttpMetadata
+    // for If-None-Match revalidation.
+    headers.set("Cache-Control", "private, max-age=60");
+  }
   return new Response(obj.body, { headers });
 }

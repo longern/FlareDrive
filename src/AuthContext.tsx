@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { AUTH_KEY, b64EncodeUnicode, readCredential, clearCredential } from './utils/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -27,7 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Check for stored credentials on app load
-    const storedCredentials = localStorage.getItem('flaredrive_auth');
+    const storedCredentials = readCredential();
     if (storedCredentials) {
       setCredentials(storedCredentials);
       setIsAuthenticated(true);
@@ -36,9 +37,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      // Create Basic Auth credentials
-      const basicAuth = btoa(`${username}:${password}`);
-      
+      const basicAuth = b64EncodeUnicode(`${username}:${password}`);
+
       // Test the credentials by making a PROPFIND request
       const response = await fetch('/file/', {
         method: 'PROPFIND',
@@ -49,8 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (response.ok) {
-        // Store credentials and update state
-        localStorage.setItem('flaredrive_auth', basicAuth);
+        localStorage.setItem(AUTH_KEY, basicAuth);
         setCredentials(basicAuth);
         setIsAuthenticated(true);
         return true;
@@ -64,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('flaredrive_auth');
+    clearCredential();
     setCredentials(null);
     setIsAuthenticated(false);
   };

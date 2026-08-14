@@ -35,7 +35,6 @@ class UploadManager {
       abortController,
     };
 
-    console.log('Adding upload to manager:', file.name, 'with id:', id);
     this.uploads.set(id, uploadItem);
     this.notifyProgressUpdate();
     

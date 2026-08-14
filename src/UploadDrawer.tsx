@@ -86,16 +86,12 @@ function UploadDrawer({
       input.onchange = async () => {
         if (!input.files) return;
         
-        if (!uploadManager) {
-          console.error('Upload manager not available');
-          return;
-        }
-        
+        if (!uploadManager) return;
+
         const files = Array.from(input.files);
         files.forEach((file) => {
           const uploadId = uploadManager.addUpload(file);
           const upload = uploadManager.getUpload(uploadId);
-          console.log('Added upload from drawer:', file.name, 'with ID:', uploadId);
           
           uploadQueue.push({ 
             file, 

@@ -40,28 +40,20 @@ export function parseXmlSafely(xmlText: string): Document | null {
     let parserError = document.querySelector('parsererror');
     
     if (!parserError) {
-      console.log('XML parsed successfully on first attempt');
       return document;
     }
-    
-    console.log('First XML parse attempt failed, trying with fixes...');
-    
+
     // Try with sanitized XML
     const fixedXml = fixBrokenXml(xmlText);
     document = parser.parseFromString(fixedXml, 'application/xml');
     parserError = document.querySelector('parsererror');
-    
+
     if (!parserError) {
-      console.log('XML parsed successfully after sanitization');
       return document;
     }
-    
-    console.error('XML parsing failed even after sanitization');
-    console.error('Parser error:', parserError?.textContent);
-    
+
     return null;
   } catch (error) {
-    console.error('Exception during XML parsing:', error);
     return null;
   }
 }
@@ -74,8 +66,6 @@ export function extractFileInfoFromXml(xmlText: string): Array<{
   lastModified?: string;
   thumbnail?: string;
 }> {
-  console.log('Using fallback regex extraction for file information');
-  
   const files: Array<{
     href: string;
     contentType?: string;
@@ -112,55 +102,11 @@ export function extractFileInfoFromXml(xmlText: string): Array<{
     });
   }
   
-  console.log(`Extracted ${files.length} files using regex fallback`);
   return files;
 }
 
 // Debug function to find problematic lines in XML
-export function debugXmlIssues(xmlText: string): void {
-  console.log('=== XML DEBUGGING ===');
-  console.log(`XML length: ${xmlText.length} characters`);
-  
-  // Find lines around error line 802
-  const lines = xmlText.split('\n');
-  console.log(`Total lines: ${lines.length}`);
-  
-  if (lines.length > 800) {
-    console.log('Lines around 800-805:');
-    for (let i = 798; i <= 804 && i < lines.length; i++) {
-      const line = lines[i];
-      console.log(`Line ${i + 1}: "${line}"`);
-      
-      // Check for problematic characters
-      const problematicChars = line.match(/[&<>"']/g);
-      if (problematicChars) {
-        console.log(`  Found potentially problematic characters: ${problematicChars.join(', ')}`);
-      }
-      
-      // Check for unescaped ampersands
-      const badAmpersands = line.match(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g);
-      if (badAmpersands) {
-        console.log(`  Found unescaped ampersands: ${badAmpersands.join(', ')}`);
-      }
-    }
-  }
-  
-  // Look for overall patterns that might cause issues
-  const unescapedAmpersands = (xmlText.match(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g) || []).length;
-  const unescapedLessThan = (xmlText.match(/<(?![/\w!?])/g) || []).length;
-  
-  console.log(`Total unescaped ampersands: ${unescapedAmpersands}`);
-  console.log(`Total unescaped < characters: ${unescapedLessThan}`);
-  
-  // Sample some file names that might be problematic
-  const hrefMatches = xmlText.match(/<href>([^<]+)<\/href>/g);
-  if (hrefMatches) {
-    console.log('Sample file paths (first 10):');
-    hrefMatches.slice(0, 10).forEach((match, index) => {
-      const path = match.replace(/<\/?href>/g, '');
-      console.log(`  ${index + 1}. "${path}"`);
-    });
-  }
-  
-  console.log('=== END XML DEBUGGING ===');
+export function debugXmlIssues(_xmlText: string): void {
+  // Debug-only helper retained on purpose; add temporary wiring here when
+  // diagnosing PROPFIND parse failures, otherwise it is a no-op.
 }

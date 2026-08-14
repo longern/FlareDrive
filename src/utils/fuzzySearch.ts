@@ -174,15 +174,7 @@ export function fuzzySearchFiles(files: FileItem[], query: string, threshold: nu
   
   // Sort by score (highest first) and return files
   scores.sort((a, b) => b.score - a.score);
-  
-  // Debug logging
-  if (scores.length > 0) {
-    console.log(`Fuzzy search for "${query}" found ${scores.length} matches:`);
-    scores.slice(0, 5).forEach(({ item, score, matchType }) => {
-      console.log(`  ${getFileName(item.key)} (score: ${score.toFixed(3)}, types: ${matchType.join(', ')})`);
-    });
-  }
-  
+
   return scores.map(s => s.item);
 }
 

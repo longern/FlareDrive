@@ -17,22 +17,14 @@ import UploadDrawer, { UploadFab } from "./UploadDrawer";
 import {
   copyPaste,
   fetchPath,
+  invalidateListings,
   processUploadQueue,
   uploadQueue,
 } from "./app/transfer";
 import { enhancedSearch } from "./utils/fuzzySearch";
+import { getAuthHeaders } from "./utils/auth";
 import FloatingUploadProgress, { UploadItem } from "./FloatingUploadProgress";
 import UploadManager from "./utils/uploadManager";
-
-function getAuthHeaders(): Record<string, string> {
-  const credentials = localStorage.getItem('flaredrive_auth');
-  if (credentials) {
-    return {
-      'Authorization': `Basic ${credentials}`
-    };
-  }
-  return {};
-}
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
@@ -201,73 +193,47 @@ function Main({
   
   // Create upload manager instance immediately
   if (!uploadManagerRef.current) {
-    console.log('Creating upload manager instance');
     uploadManagerRef.current = new UploadManager({
       onProgressUpdate: (uploads) => {
-        console.log('Upload progress update - count:', uploads.length);
-        console.log('Uploads details:', uploads.map(u => ({
-          id: u.id,
-          fileName: u.fileName,
-          status: u.status,
-          progress: u.progress
-        })));
         setFloatingUploads([...uploads]); // Force re-render with new array
       },
-      onUploadComplete: (id) => {
-        console.log(`Upload completed: ${id}`);
-      },
-      onUploadError: (id, error) => {
-        console.error(`Upload error for ${id}: ${error}`);
-      },
-      onUploadCancelled: (id) => {
-        console.log(`Upload cancelled: ${id}`);
-      },
+      onUploadComplete: () => {},
+      onUploadError: () => {},
+      onUploadCancelled: () => {},
     });
   }
 
   const fetchFiles = useCallback(() => {
     setLoading(true);
-    console.log(`Fetching files for directory: "${cwd}"`);
-    
     fetchPath(cwd)
       .then((files) => {
-        console.log(`Successfully fetched ${files.length} files for "${cwd}"`);
         setFiles(files);
         setMultiSelected(null);
       })
       .catch((error) => {
-        console.error(`Failed to fetch files for "${cwd}":`, error);
         onError(error);
       })
       .finally(() => setLoading(false));
   }, [cwd, onError]);
 
-  // Refresh files when upload completes
-  useEffect(() => {
-    // Setup is done above, just log for debugging
-    console.log('Main component mounted, upload manager ready:', !!uploadManagerRef.current);
-  }, []);
-  
   useEffect(() => {
     fetchFiles();
   }, [fetchFiles]);
 
   const filteredFiles = useMemo(
     () => {
-      console.log(`Filtering ${files.length} files with search query: "${search}"`);
-      
       let searchResults: FileItem[];
-      
+
       if (search && search.trim().length > 0) {
         // Use enhanced search with fuzzy matching toggle
         searchResults = enhancedSearch(files, search.trim(), useFuzzySearch);
-        console.log(`Search found ${searchResults.length} matches (fuzzy: ${useFuzzySearch})`);
       } else {
         searchResults = files;
       }
-      
-      // Sort: directories first, then apply selected sort
-      const sorted = searchResults.sort((a, b) => {
+
+      // Sort: directories first, then apply selected sort.
+      // Copy first — sort() mutates in place and would reorder `files`.
+      const sorted = [...searchResults].sort((a, b) => {
         const aIsDir = isDirectory(a);
         const bIsDir = isDirectory(b);
         
@@ -322,24 +288,20 @@ function Main({
           onDrop={async (files) => {
             // Add files to queue and upload manager
             const uploadManager = uploadManagerRef.current;
-            if (!uploadManager) {
-              console.error('Upload manager not initialized');
-              return;
-            }
-            
+            if (!uploadManager) return;
+
             Array.from(files).forEach((file) => {
               const uploadId = uploadManager.addUpload(file);
               const upload = uploadManager.getUpload(uploadId);
-              console.log('Added upload:', file.name, 'with ID:', uploadId);
-              
-              uploadQueue.push({ 
-                file, 
+
+              uploadQueue.push({
+                file,
                 basedir: cwd,
                 uploadId,
                 abortController: upload?.abortController
               });
             });
-            
+
             // Start processing uploads
             processUploadQueue(uploadManager);
           }}
@@ -364,40 +326,16 @@ function Main({
         </DropZone>
       )}
       {multiSelected === null && (
-        <>
-          <UploadFab onClick={() => setShowUploadDrawer(true)} />
-          {/* Debug button to test upload visibility */}
-          {window.location.hostname === 'localhost' && (
-            <button
-              style={{
-                position: 'fixed',
-                left: 16,
-                bottom: 16,
-                padding: '8px 16px',
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                zIndex: 1000
-              }}
-              onClick={() => {
-                console.log('Adding test upload');
-                const testFile = new File(['test content'], 'test-file.txt', { type: 'text/plain' });
-                const uploadId = uploadManagerRef.current?.addUpload(testFile);
-                console.log('Test upload added with ID:', uploadId);
-              }}
-            >
-              Test Upload UI
-            </button>
-          )}
-        </>
+        <UploadFab onClick={() => setShowUploadDrawer(true)} />
       )}
       <UploadDrawer
         open={showUploadDrawer}
         setOpen={setShowUploadDrawer}
         cwd={cwd}
-        onUpload={fetchFiles}
+        onUpload={() => {
+          invalidateListings();
+          fetchFiles();
+        }}
         uploadManager={uploadManagerRef.current}
       />
       <MultiSelectToolbar
@@ -415,6 +353,7 @@ function Main({
           const newName = window.prompt("Rename to:");
           if (!newName) return;
           await copyPaste(multiSelected[0], cwd + newName, true);
+          invalidateListings();
           fetchFiles();
         }}
         onDelete={async () => {
@@ -426,6 +365,7 @@ function Main({
           if (!window.confirm(`${confirmMessage}\n${filenames}`)) return;
           for (const key of multiSelected)
             await fetch(`/file/${encodeKey(key)}`, { method: "DELETE", headers: getAuthHeaders() });
+          invalidateListings();
           fetchFiles();
         }}
         onCopyLink={async () => {
@@ -438,7 +378,6 @@ function Main({
             if (navigator.clipboard && window.isSecureContext) {
               // Use modern clipboard API if available
               await navigator.clipboard.writeText(fullUrl);
-              console.log(`Copied to clipboard: ${fullUrl}`);
             } else {
               // Fallback for older browsers or non-secure contexts
               const textArea = document.createElement('textarea');
@@ -449,26 +388,21 @@ function Main({
               document.body.appendChild(textArea);
               textArea.focus();
               textArea.select();
-              
+
               try {
                 document.execCommand('copy');
-                console.log(`Copied to clipboard (fallback): ${fullUrl}`);
               } catch (err) {
-                console.error('Failed to copy to clipboard:', err);
                 // Show user the URL in a prompt as last resort
                 window.prompt('Copy this URL:', fullUrl);
               }
-              
+
               document.body.removeChild(textArea);
             }
-            
+
             // Show user feedback that link was copied
             const fileName = filePath.split('/').pop() || 'file';
             setCopyLinkSnackbar(`Link copied for: ${fileName}`);
-            console.log(`Link copied for: ${fileName}`);
-            
           } catch (err) {
-            console.error('Error copying link:', err);
             // Show user the URL in a prompt as fallback
             window.prompt('Copy this URL:', fullUrl);
           }

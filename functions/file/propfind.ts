@@ -97,8 +97,32 @@ export async function handleRequestPropfind({
   </response>`;
   });
 
-  return new Response(responseTemplate.replace("{{items}}", items.join("")), {
+  // Listing TTL: short so Cloudflare edge + browser can serve repeat navigations
+  // without hitting R2, but stale listings are revalidated quickly. Some WebDAV
+  // clients (e.g. directory sync) depend on fresh listings, so keep it small.
+  const responseBody = responseTemplate.replace("{{items}}", items.join(""));
+  const etag = `"${await sha1Hex(responseBody)}"`;
+
+  if (request.headers.get("If-None-Match") === etag) {
+    return new Response(null, { status: 304 });
+  }
+
+  return new Response(responseBody, {
     status: 207,
-    headers: { "Content-Type": "application/xml" },
+    headers: {
+      "Content-Type": "application/xml",
+      "Cache-Control": "max-age=5, must-revalidate",
+      ETag: etag,
+    },
   });
+}
+
+async function sha1Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-1",
+    new TextEncoder().encode(input)
+  );
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
