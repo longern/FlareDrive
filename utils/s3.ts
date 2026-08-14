@@ -1,20 +1,22 @@
-function arrayBufferToHex(arrayBuffer: ArrayBuffer) {
-  return [...new Uint8Array(arrayBuffer)]
+function arrayBufferToHex(arrayBuffer: BufferSource) {
+  return [...new Uint8Array(arrayBuffer as ArrayBuffer)]
     .map((x) => x.toString(16).padStart(2, "0"))
     .join("");
 }
 
-async function hmacSHA256(secret: ArrayBuffer, message: string | ArrayBuffer) {
-  if (typeof message === "string") message = new TextEncoder().encode(message);
+async function hmacSHA256(secret: BufferSource | string, message: BufferSource | string) {
+  const keyData: BufferSource =
+    typeof secret === "string" ? new TextEncoder().encode(secret) : secret;
+  const messageData: BufferSource =
+    typeof message === "string" ? new TextEncoder().encode(message) : message;
   const key = await crypto.subtle.importKey(
     "raw",
-    secret,
+    keyData,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
   );
-  const signature = await crypto.subtle.sign("HMAC", key, message);
-  return signature;
+  return crypto.subtle.sign("HMAC", key, messageData);
 }
 
 export class S3Client {
@@ -33,24 +35,24 @@ export class S3Client {
     const url = new URL(input);
     const objectKey = decodeURI(url.pathname);
     const method = init.method || "GET";
-    const canonicalQueryString = [...url.searchParams]
-      .map(
-        ([key, value]) =>
-          encodeURIComponent(key) + "=" + encodeURIComponent(value)
-      )
-      .join("&");
+    // url.search is already percent-encoded; echoing it preserves the exact
+    // query used for signing without relying on iterable URLSearchParams.
+    const canonicalQueryString = url.search.replace(/^\?/, "");
     const hashedPayload = "UNSIGNED-PAYLOAD";
     const headers = new Headers(init.headers);
     const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "");
     headers.set("x-amz-date", datetime);
     headers.set("x-amz-content-sha256", hashedPayload);
     headers.set("host", url.host);
-    const signedHeaderKeys = [...headers.keys()].filter(
-      (header) =>
+    const signedHeaderKeys: string[] = [];
+    headers.forEach((_value, header) => {
+      if (
         header === "host" ||
         header === "content-type" ||
         header.startsWith("x-amz-")
-    );
+      )
+        signedHeaderKeys.push(header);
+    });
     const canonicalHeaders = signedHeaderKeys
       .map((key) => `${key}:${headers.get(key)}\n`)
       .join("");
