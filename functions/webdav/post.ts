@@ -1,13 +1,24 @@
 import { notFound } from "./utils";
-import { RequestHandlerParams } from "./utils";
+import {
+  addThumbnailRef,
+  isValidThumbnailDigest,
+  RequestHandlerParams,
+} from "./utils";
 
 export async function handleRequestPostCreateMultipart({
   bucket,
   path,
   request,
 }: RequestHandlerParams) {
-  const thumbnail = request.headers.get("fd-thumbnail");
+  const rawThumbnail = request.headers.get("fd-thumbnail");
+  const thumbnail = isValidThumbnailDigest(rawThumbnail)
+    ? rawThumbnail
+    : undefined;
   const customMetadata = thumbnail ? { thumbnail } : undefined;
+
+  // Reference the thumbnail before the upload starts, so a concurrent delete
+  // of the last other file using it cannot garbage-collect it mid-upload.
+  if (thumbnail) await addThumbnailRef(bucket, thumbnail, path);
 
   const multipartUpload = await bucket.createMultipartUpload(path, {
     httpMetadata: request.headers,
