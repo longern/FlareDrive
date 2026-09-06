@@ -1,7 +1,7 @@
 import pLimit from "p-limit";
 
 import { notFound } from "./utils";
-import { listAll, RequestHandlerParams, WEBDAV_ENDPOINT } from "./utils";
+import { copyObject, listAll, RequestHandlerParams, WEBDAV_ENDPOINT } from "./utils";
 
 export async function handleRequestCopy({
   bucket,
@@ -33,10 +33,7 @@ export async function handleRequestCopy({
   const destinationExists = await bucket.head(destination);
   if (dontOverwrite && destinationExists)
     return new Response("Precondition Failed", { status: 412 });
-  await bucket.put(destination, src.body, {
-    httpMetadata: src.httpMetadata,
-    customMetadata: src.customMetadata,
-  });
+  await copyObject(bucket, src, destination);
 
   const isDirectory =
     src.httpMetadata?.contentType === "application/x-directory";
@@ -51,10 +48,7 @@ export async function handleRequestCopy({
           const target = `${destination}/${object.key.slice(prefix.length)}`;
           const src = await bucket.get(object.key);
           if (src === null) return;
-          await bucket.put(target, src.body, {
-            httpMetadata: object.httpMetadata,
-            customMetadata: object.customMetadata,
-          });
+          await copyObject(bucket, src, target);
         };
         const limit = pLimit(5);
         const promises = [];

@@ -1,4 +1,12 @@
-import { RequestHandlerParams, ROOT_OBJECT } from "./utils";
+import {
+  RequestHandlerParams,
+  ROOT_OBJECT,
+  addThumbnailRef,
+  isValidThumbnailDigest,
+  releaseThumbnailRef,
+  thumbnailObjectKey,
+  thumbnailRefKey,
+} from "./utils";
 
 async function handleRequestPutMultipart({
   bucket,
@@ -46,16 +54,42 @@ export async function handleRequestPut({
     if (parentDir === null) return new Response("Conflict", { status: 409 });
   }
 
-  const thumbnail = request.headers.get("fd-thumbnail");
-  const customMetadata = thumbnail ? { thumbnail } : undefined;
+  const rawThumbnail = request.headers.get("fd-thumbnail");
+  const thumbnail = isValidThumbnailDigest(rawThumbnail)
+    ? rawThumbnail
+    : undefined;
+
+  // Overwriting a file replaces its customMetadata, so remember whether the
+  // previous object referenced a thumbnail that will need releasing.
+  const prev = await bucket.head(path);
+  const prevThumbnail = prev?.customMetadata?.thumbnail;
+
+  if (thumbnail) {
+    // Reference the thumbnail before the file exists, so a concurrent delete
+    // of the last other file using it cannot garbage-collect it mid-upload.
+    await addThumbnailRef(bucket, thumbnail, path);
+    // The client uploads the thumbnail blob just before the file; if a
+    // concurrent GC removed it in between, fail so the upload can be retried.
+    if ((await bucket.head(thumbnailObjectKey(thumbnail))) === null) {
+      await bucket.delete(thumbnailRefKey(thumbnail, path));
+      return new Response("Thumbnail is missing", { status: 409 });
+    }
+  }
 
   const result = await bucket.put(path, request.body, {
     onlyIf: request.headers,
     httpMetadata: request.headers,
-    customMetadata,
+    customMetadata: thumbnail ? { thumbnail } : undefined,
   });
 
-  if (!result) return new Response("Preconditions failed", { status: 412 });
+  if (!result) {
+    if (thumbnail) await bucket.delete(thumbnailRefKey(thumbnail, path));
+    return new Response("Preconditions failed", { status: 412 });
+  }
+
+  if (prevThumbnail !== thumbnail) {
+    await releaseThumbnailRef(bucket, prevThumbnail, path);
+  }
 
   return new Response("", { status: 201 });
 }
